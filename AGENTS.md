@@ -42,7 +42,7 @@ crates/
 apps/            desktop shell (eframe, tray, notifications) and the web build
 index/apps.json  the community index (repo names only)
 xtask/           cargo xtask ci | wasm | version | ico
-packaging/       macOS, Windows, Linux, FreeBSD and web packaging scripts
+packaging/       macOS, Windows, Linux and web packaging scripts
 ```
 
 Layering: `descriptor` depends on no workspace crate. `core` depends only on `descriptor` and must

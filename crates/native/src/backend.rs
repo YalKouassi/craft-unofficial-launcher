@@ -1191,7 +1191,10 @@ fn load_index(http: &Http) -> Vec<craft_app_descriptor::IndexEntry> {
             None
         }
     };
-    let parsed = remote.as_deref().and_then(|b| craft_app_descriptor::Index::parse(b).ok()).map_or_else(|| craft_app_descriptor::Index::parse(BUILTIN_INDEX), Ok);
+    let parsed = remote
+        .as_deref()
+        .and_then(|b| craft_app_descriptor::Index::parse(b).ok())
+        .map_or_else(|| craft_app_descriptor::Index::parse(BUILTIN_INDEX), Ok);
     match parsed {
         Ok(i) => i.apps,
         Err(e) => {

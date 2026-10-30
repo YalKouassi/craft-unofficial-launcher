@@ -90,7 +90,13 @@ impl Descriptor {
         bad(self.schema == SCHEMA, format!("schema {} isn't supported (this launcher reads schema {SCHEMA})", self.schema));
         bad(valid_id(&self.id), format!("id {:?} must be 1–40 lowercase letters, digits and single hyphens", self.id));
         bad(!reserved::id_for_repo(&self.id, &self.repo), format!("id {:?} belongs to an official app", self.id));
-        bad(valid_name(&self.name), format!("name {:?} must be 1–40 characters of plain text, usable as a folder name (no / \\ : * ? \" < > |, not starting or ending with a dot)", self.name));
+        bad(
+            valid_name(&self.name),
+            format!(
+                "name {:?} must be 1–40 characters of plain text, usable as a folder name (no / \\ : * ? \" < > |, not starting or ending with a dot)",
+                self.name
+            ),
+        );
         bad(!reserved::id(&self.name), format!("name {:?} belongs to an official app", self.name));
         bad(valid_text(&self.tagline, 80), "tagline must be 1–80 characters of plain text".into());
         bad(valid_repo(&self.repo), format!("repo {:?} must be a GitHub owner/name", self.repo));

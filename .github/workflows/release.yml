@@ -27,6 +27,8 @@ jobs:
       # assets come from packaging/*: craft-unofficial-launcher-<version>-<os>-<arch>[-portable].<ext>.
       app-title: Craft Unofficial Launcher
       version: ${{ inputs.version }}
+      # macOS, Windows and Linux only.
+      has-freebsd: false
     secrets:
       APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
       APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
