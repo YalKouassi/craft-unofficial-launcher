@@ -997,7 +997,8 @@ mod tests {
         assert_eq!(suite_folders(launcher, &roots), want);
         // The launcher's own MSI installs to `<root>\Craft Unofficial Launcher`: `<App>` in the bare root.
         let exes = exe_candidates(launcher, None, &roots);
-        assert!(exes.contains(&PathBuf::from(r"C:\Program Files\Craft Unofficial Launcher\craft-unofficial-launcher.exe")), "{exes:?}");
+        let own = roots[0].join("Craft Unofficial Launcher").join("craft-unofficial-launcher.exe");
+        assert!(exes.contains(&own), "{exes:?}");
         assert!(!want.iter().chain(&exes).any(|p| p.to_string_lossy().contains("ArtCraft")));
         // No publisher, no suite folder.
         let mut none = *CraftApp::by_id("photocraft").unwrap();
