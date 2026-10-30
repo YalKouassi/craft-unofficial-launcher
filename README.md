@@ -57,6 +57,7 @@ a descriptor, keeps a fixed release format, and the user adds its repository.
 | | |
 |---|---|
 | Spec | [docs/craft-app-spec.md](docs/craft-app-spec.md) |
+| Example descriptor | [`craft-app.json.example`](craft-app.json.example): every field, with the optional ones filled in |
 | Starter descriptor | `craft-release-check init --repo owner/name --id myapp --name MyApp` |
 | Check a release before upload | `craft-release-check dir dist/ --repo owner/name --tag v1.2.3` |
 | Check a published release | `craft-release-check github --repo owner/name` |

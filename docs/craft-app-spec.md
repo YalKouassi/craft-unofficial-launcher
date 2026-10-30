@@ -8,7 +8,9 @@ anything that breaks a rule, with the reasons. It never guesses.
 
 The rules below are the ones in `crates/descriptor` (package `craft-app-descriptor`). The
 launcher, the app-side updater and the CI checker `craft-release-check` all run that same code, so
-a release the checker passes is one the launcher accepts. If this page and the code ever disagree,
+a release the checker passes is one the launcher accepts, with one exception: the checker can't see
+inside a Windows executable, so the version rule for portable zips (section 3, "Archive layouts")
+is only enforced when the launcher installs one. If this page and the code ever disagree,
 the code wins; please report the difference.
 
 Being listed by the launcher vouches for nothing. ArtCraft and the launcher's maintainers don't
@@ -151,6 +153,22 @@ A file that starts with the id and ends with a package ending but doesn't follow
 - **Apple team and the DMG.** A release with a `.dmg` but no `apple_team` gets a warning: the
   launcher only installs a DMG whose `.app` is signed by the named Developer ID team, so without one
   it never installs the DMG, it only opens a copy that is already there.
+
+### Archive layouts
+
+The launcher installs archives without running anything in them, so their layout is fixed:
+
+- **Windows portable zip** (`-portable.zip`): `<id>.exe` (or `<former_id>.exe`, in any case) sits
+  at the root of the zip, or at the root of a single wrapper folder. Entries use `/` as the folder
+  separator (a zip written with `\` is refused), with no absolute paths, `..` or links.
+- **The portable executable's version.** That `<id>.exe` must carry a Windows version resource
+  (VERSIONINFO) whose `ProductVersion` is the release's version (`1.2.0` for tag `v1.2.0`). The
+  launcher reads it after unpacking to confirm it installed the version it chose, and rolls the
+  install back when it's missing or different. Rust apps get one from a `build.rs` using the
+  `winresource` crate, which takes the version from `Cargo.toml`. The checker can't test this; check
+  with PowerShell: `(Get-Item <id>.exe).VersionInfo.ProductVersion`. An `.msi` has no such rule.
+- **Linux and FreeBSD tarball** (`.tar.gz`): after an optional single top folder, the program is a
+  regular file at `bin/<id>` or `<id>`, reached without links.
 
 ### The icon
 

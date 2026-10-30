@@ -263,6 +263,12 @@ mod tests {
     }
 
     #[test]
+    fn the_repos_example_file_reads() {
+        let d = Descriptor::parse(include_bytes!("../../../craft-app.json.example"), "example-org/examplecraft").unwrap();
+        assert_eq!(d.web_demo.as_deref(), Some("https://example.org/examplecraft/try"));
+    }
+
+    #[test]
     fn the_proposals_example_reads() {
         let d = Descriptor::parse(EXAMPLE.as_bytes(), "example-org/examplecraft").unwrap();
         assert_eq!(d.id, "examplecraft");

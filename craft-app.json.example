@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "examplecraft",
+  "name": "ExampleCraft",
+  "tagline": "What it's for, in a few words",
+  "repo": "example-org/examplecraft",
+  "publisher": "Example Org",
+  "bundle_id": "org.example.examplecraft",
+  "msi_publisher": "Example Org",
+  "website": "https://example.org/examplecraft",
+  "web_demo": "https://example.org/examplecraft/try",
+  "color": "#7a45b8",
+  "icon": "examplecraft-256.png"
+}
