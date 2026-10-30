@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "id": "craft-unofficial-launcher",
+  "name": "Craft Unofficial Launcher",
+  "tagline": "Installs and updates unofficial Craft-style apps",
+  "repo": "YalKouassi/craft-unofficial-launcher",
+  "publisher": "Craft Unofficial Launcher contributors",
+  "upstream": null,
+  "bundle_id": "io.github.yalkouassi.craft-unofficial-launcher",
+  "msi_publisher": "Craft Unofficial Launcher contributors",
+  "apple_team": null,
+  "website": "https://github.com/YalKouassi/craft-unofficial-launcher",
+  "color": "#f5a524",
+  "icon": "craft-unofficial-launcher-128.png"
+}

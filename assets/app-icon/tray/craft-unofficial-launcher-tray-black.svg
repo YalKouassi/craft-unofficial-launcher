@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="16 16 96 96">
+  <!-- Tray template (macOS tints it): the launcher mark's tiles and wedge in black, no backdrop. -->
+  <rect x="22" y="22" width="38" height="38"/>
+  <rect x="22" y="68" width="38" height="38"/>
+  <rect x="68" y="68" width="38" height="38"/>
+  <path d="M68 22h38v38z"/>
+</svg>

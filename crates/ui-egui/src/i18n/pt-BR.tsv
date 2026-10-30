@@ -1,4 +1,4 @@
-# Brazilian Portuguese (pt-BR) catalog for ArtCraft Launcher.
+# Brazilian Portuguese (pt-BR) catalog for Craft Unofficial Launcher.
 # Format: context<TAB>source<TAB>translation
 # Empty context = plain UI string (tl!, t).
 # @id = command-id keyed (tr_id).
@@ -7,7 +7,7 @@
 # Other context = disambiguation for tr_ctx.
 
 	Launcher	Launcher
-	Craft App Suite	Craft App Suite
+	Unofficial apps	Aplicativos não oficiais
 	by {name}	por {name}
 	Open Source Tools for Creatives, Makers, and Builders	Ferramentas de código aberto para criadores, artistas e desenvolvedores
 	Settings	Configurações
@@ -21,14 +21,12 @@
 	Not installed	Não instalados
 	Search apps	Buscar aplicativos
 	Sort	Ordenar
-	Suite order	Ordem da suíte
 	Name	Nome
 	Inspired by	Inspirado em
 	Status	Status
 	Installed version	Versão instalada
 	Latest version	Última versão
 	Newest release	Lançamento mais recente
-	Discord	Discord
 	GitHub	GitHub
 	Website	Site
 	Classic apps	Aplicativos clássicos
@@ -62,7 +60,7 @@
 	Reinstall	Reinstalar
 	Uninstall…	Desinstalar…
 	All releases	Todos os lançamentos
-	ArtCraft Launcher {version} is available.	ArtCraft Launcher {version} está disponível.
+	Craft Unofficial Launcher {version} is available.	Craft Unofficial Launcher {version} está disponível.
 	Dismiss	Dispensar
 	Update and restart	Atualizar e reiniciar
 	A new version is available. Would you like to relaunch with the updated version?	Uma nova versão está disponível. Reiniciar com a nova versão?
@@ -73,7 +71,7 @@
 	Released {date}	Lançado em {date}
 	Open on GitHub	Abrir no GitHub
 	Close	Fechar
-	ArtCraft Launcher {version}	ArtCraft Launcher {version}
+	Craft Unofficial Launcher {version}	Craft Unofficial Launcher {version}
 	Only when I ask	Apenas quando eu pedir
 	Automatically download and install updates	Baixar e instalar atualizações automaticamente
 	Notify me when an installed app has an update	Notificar quando um aplicativo instalado tiver atualização
@@ -85,14 +83,14 @@
 	Updates always use the format an app was installed with.	As atualizações sempre usam o formato com o qual o aplicativo foi instalado.
 	Running in the background	Execução em segundo plano
 	Keep running in the tray when the window is closed	Continuar na bandeja do sistema ao fechar a janela
-	ArtCraft Launcher is still running	O ArtCraft Launcher continua aberto
+	Craft Unofficial Launcher is still running	O Craft Unofficial Launcher continua aberto
 	It's in the tray: open it or quit it from the tray icon, or turn this off in the settings.	Ele está na bandeja do sistema: abra-o ou encerre-o pelo ícone, ou desative isso nas configurações.
 	Show the window on the current desktop	Mostrar a janela na área de trabalho atual
-	Start ArtCraft Launcher when I log in	Iniciar o ArtCraft Launcher ao fazer login
+	Start Craft Unofficial Launcher when I log in	Iniciar o Craft Unofficial Launcher ao fazer login
 	Community	Comunidade
-	Questions, ideas and news from the ArtCraft team	Dúvidas, ideias e novidades da equipe ArtCraft
+	Questions, ideas and bug reports about the launcher go to its GitHub repository	Dúvidas, ideias e relatos de bugs sobre o launcher vão para o repositório dele no GitHub
 	Appearance	Aparência
-	Quit ArtCraft Launcher	Sair do ArtCraft Launcher
+	Quit Craft Unofficial Launcher	Sair do Craft Unofficial Launcher
 	Done	Concluído
 	Uninstall {name}?	Desinstalar {name}?
 	The app will be moved to the Trash. Your documents and settings stay.	O aplicativo será movido para a Lixeira. Seus documentos e configurações serão mantidos.
@@ -107,7 +105,6 @@
 	{month} {day}, {year}	{day} de {month} de {year}
 
 	Automatically	Automaticamente
-	Every Craft app	Todos os aplicativos Craft
 	Apps on this computer	Aplicativos neste computador
 	Installed apps with a newer version	Aplicativos instalados com nova versão
 	Apps you can install	Aplicativos que você pode instalar
@@ -117,7 +114,7 @@
 	Apps you hid	Aplicativos que você ocultou
 	Checked {ago} · using {sources}	Verificado {ago} · via {sources}
 	{a} and {b}	{a} e {b}
-	Join the Discord	Entrar no Discord
+	release feed	feed de versões
 	Learn more	Saiba mais
 	Minimize	Minimizar
 	Maximize	Maximizar
@@ -127,7 +124,7 @@
 	Open link	Abrir link
 	Update	Atualizar
 	{name} icon	Ícone do {name}
-	Loading ArtCraft Launcher…	Carregando ArtCraft Launcher…
+	Loading Craft Unofficial Launcher…	Carregando Craft Unofficial Launcher…
 	Cancel update	Cancelar atualização
 	Stop waiting; the update can be started again later	Parar de aguardar; a atualização pode ser iniciada novamente depois
 	Download again	Baixar novamente
@@ -151,22 +148,6 @@
 	Flatpak bundle	Pacote Flatpak
 	Tarball (.tar.gz)	Arquivo (.tar.gz)
 
-# Contextual: each app's tagline, keyed by app id
-photocraft	Image editing	Edição de imagens
-vectorcraft	Vector illustration	Ilustração vetorial
-filmcraft	Video editing, color and sound	Edição de vídeo, cor e som
-lightcraft	Photo library and raw development	Biblioteca de fotos e revelação RAW
-pdfcraft	Reading, organizing and protecting PDFs	Leitura, organização e proteção de PDFs
-effectcraft	Motion graphics and visual effects	Motion graphics e efeitos visuais
-designcraft	Page layout and publishing	Diagramação de páginas e publicação
-wordcraft	Writing and document design	Escrita e design de documentos
-deckcraft	Presentations and slide shows	Apresentações e slides
-gridcraft	Spreadsheets and data	Planilhas e dados
-solidcraft	Parametric 3D CAD	CAD 3D paramétrico
-cadcraft	Computer-aided design and drafting	Desenho técnico e projeto assistido por computador (CAD)
-soundcraft	Recording, editing and mixing audio	Gravação, edição e mixagem de áudio
-figcraft	Interface design and prototyping	Design de interfaces e prototipagem
-
 # Contextual: month abbreviations for date rendering
 month	Jan	jan.
 month	Feb	fev.
@@ -186,8 +167,6 @@ month	Dec	dez.
 	Installing for {platform}	Instalando para {platform}
 	Downloads for {platform}	Downloads para {platform}
 	No downloads for this system	Nenhum download disponível para este sistema
-	Join the ArtCraft community on Discord	Entre na comunidade ArtCraft no Discord
-	ArtCraft on {name}	ArtCraft no {name}
 	Couldn't open {name}: {e}	Não foi possível abrir {name}: {e}
 	Download cancelled	Download cancelado
 	Available to install	Disponível para instalar
@@ -207,7 +186,6 @@ month	Dec	dez.
 	Version {version} installed	Versão {version} instalada
 	Version {latest}	Versão {latest}
 	No release published yet	Nenhum lançamento publicado ainda
-	ArtCraft Launcher	ArtCraft Launcher
 	App	Aplicativo
 	Latest	Última
 	Released	Lançado
@@ -228,7 +206,6 @@ month	Dec	dez.
 	Downloads the new version, replaces this one and opens it again	Baixa a nova versão, substitui a atual e abre novamente
 	Couldn't check for updates: {f}	Não foi possível verificar atualizações: {f}
 	GitHub repository	Repositório no GitHub
-	ArtCraft	ArtCraft
 	Update 1 app	Atualizar 1 aplicativo
 	Update all ({count})	Atualizar todos ({count})
 	⊞  Grid	⊞  Grade
@@ -241,7 +218,7 @@ month	Dec	dez.
 	Full changelog	Histórico completo de alterações
 	link	link
 	No apps match	Nenhum aplicativo encontrado
-	Open ArtCraft Launcher to update.	Abra o ArtCraft Launcher para atualizar.
+	Open Craft Unofficial Launcher to update.	Abra o Craft Unofficial Launcher para atualizar.
 	{name} {v} is available	{name} {v} está disponível
 	{count} updates are available	{count} atualizações estão disponíveis
 	These notes weren't fetched (GitHub's request limit was reached). They're on the release page.	Estas notas não foram carregadas (o limite de requisições do GitHub foi atingido). Elas estão na página de lançamentos.
@@ -296,21 +273,19 @@ filter	Installed	Instalados
 @id	launcher.notes	Novidades
 @id	launcher.dismiss	Dispensar
 @id	settings.open	Configurações
-@id	settings.quit	Sair do ArtCraft Launcher
+@id	settings.quit	Sair do Craft Unofficial Launcher
 @id	view.grid	Grade
 @id	view.table	Tabela
 @id	filter.all	Todos
 @id	filter.installed	Instalados
 @id	filter.updates	Atualizações
 @id	filter.notinstalled	Não instalados
-@id	sort.suite	Ordem da suíte
 @id	sort.name	Nome
 @id	sort.inspired	Inspirado em
 @id	sort.status	Status
 @id	sort.installed	Versão instalada
 @id	sort.latest	Última versão
 @id	sort.released	Lançamento mais recente
-@id	help.discord	Discord
 @id	help.github	GitHub
 @id	help.website	Site
 @id	update.check	Verificar atualizações
@@ -320,15 +295,14 @@ filter	Installed	Instalados
 @id	linux.preferred_kind	Instalar novos aplicativos como
 @id	tray.close_to_tray	Continuar na bandeja do sistema ao fechar a janela
 @id	tray.show_on_current_desktop	Mostrar a janela na área de trabalho atual
-@id	tray.login_item	Iniciar o ArtCraft Launcher ao fazer login
+@id	tray.login_item	Iniciar o Craft Unofficial Launcher ao fazer login
 @id	appearance.theme	Aparência
 
 # Tray (menu bar) menu and tooltip
-	Show ArtCraft Launcher	Mostrar ArtCraft Launcher
+	Show Craft Unofficial Launcher	Mostrar Craft Unofficial Launcher
+	Visit the website	Visitar o site
+	Craft Unofficial Launcher on GitHub	Craft Unofficial Launcher no GitHub
 	Check for Updates	Verificar atualizações
-	Visit getartcraft.com	Visitar getartcraft.com
-	ArtCraft on GitHub	ArtCraft no GitHub
-	Join the ArtCraft Discord	Entrar no Discord da ArtCraft
 	App details	Detalhes do aplicativo
 	More actions for {name}	Mais ações para {name}
 	Close (Esc)	Fechar (Esc)
@@ -343,7 +317,7 @@ filter	Installed	Instalados
 	Next picture (→)	Próxima imagem (→)
 	Loading pictures…	Carregando imagens…
 	Pictures couldn't be loaded. Reopen this page to try again.	Não foi possível carregar as imagens. Abra a página novamente para tentar de novo.
-@plural	ArtCraft Launcher · {n} update available|ArtCraft Launcher · {n} updates available	ArtCraft Launcher · {n} atualização disponível|ArtCraft Launcher · {n} atualizações disponíveis
+@plural	Craft Unofficial Launcher · {n} update available|Craft Unofficial Launcher · {n} updates available	Craft Unofficial Launcher · {n} atualização disponível|Craft Unofficial Launcher · {n} atualizações disponíveis
 	Install folder	Pasta de instalação
 	Default install folder	Pasta de instalação padrão
 	System default	Padrão do sistema
@@ -356,7 +330,7 @@ filter	Installed	Instalados
 @msg	couldn't use install folder {path}: {reason}	não foi possível usar a pasta de instalação {path}: {reason}
 @msg	this release has no AppImage for a custom install folder	esta versão não tem um AppImage para uma pasta de instalação personalizada
 @msg	custom install folders aren't supported on this system	pastas de instalação personalizadas não são compatíveis com este sistema
-@msg	{path} already exists and wasn't installed by ArtCraft Launcher	{path} já existe e não foi instalado pelo ArtCraft Launcher
+@msg	{path} already exists and wasn't installed by Craft Unofficial Launcher	{path} já existe e não foi instalado pelo Craft Unofficial Launcher
 @msg	couldn't move {path} to Trash ({reason}). Remove it in Finder instead.	não foi possível mover {path} para o Lixo ({reason}). Remova-o pelo Finder.
 	Apps are placed inside this folder.	Os aplicativos são colocados dentro desta pasta.
 	Replace what's there?	Substituir o que já existe?
@@ -383,3 +357,20 @@ column	Author	Autor
 	Older launcher versions require a manual reinstall.	Versões antigas do inicializador exigem reinstalação manual.
 	Your files may not open in older versions.	Seus arquivos podem não abrir em versões antigas.
 	Enable automatic installs in Settings to follow new nightly builds.	Ative as instalações automáticas nas Configurações para receber as novas versões noturnas.
+# Unofficial apps: adding and listing them (unofficial.rs).
+	Added {name}	{name} adicionado
+	Add app	Adicionar aplicativo
+	Add an unofficial app by its GitHub repository	Adicionar um aplicativo não oficial pelo repositório no GitHub
+	No apps yet	Nenhum aplicativo ainda
+	Add unofficial Craft-style apps by their GitHub repository. Each app describes itself with a craft-app.json in its releases; the launcher checks it, then installs and updates the app like any other.	Adicione aplicativos não oficiais no estilo Craft pelo repositório no GitHub. Cada aplicativo se descreve com um craft-app.json nos seus lançamentos; o launcher o verifica e depois instala e atualiza o aplicativo como qualquer outro.
+	Not created, verified, monitored, or supported by ArtCraft or by this launcher's maintainers. They accept no liability for the code, security, stability, or behavior of this software. Send bugs, security issues and support requests to the app's own repository.	Não criado, verificado, monitorado nem suportado pela ArtCraft ou pelos mantenedores deste launcher. Eles não aceitam nenhuma responsabilidade pelo código, segurança, estabilidade ou comportamento deste software. Envie bugs, problemas de segurança e pedidos de suporte para o repositório do próprio aplicativo.
+	Add an unofficial app	Adicionar um aplicativo não oficial
+	Add	Adicionar
+	{repo} wasn't added:	{repo} não foi adicionado:
+	From the community index	Do índice da comunidade
+	Loading…	Carregando…
+	Every app in the index is already in your list.	Todos os aplicativos do índice já estão na sua lista.
+	Being listed vouches for nothing: each app is checked the same way as one you type in.	Estar no índice não garante nada: cada aplicativo é verificado da mesma forma que um que você digita.
+	Newest release refused	Lançamento mais recente recusado
+	Remove from list	Remover da lista
+	The app stays installed; only the launcher forgets it	O aplicativo continua instalado; só o launcher o esquece

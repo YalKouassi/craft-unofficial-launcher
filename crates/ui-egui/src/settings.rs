@@ -74,8 +74,8 @@ impl CheckEvery {
         }
     }
 
-    /// How often to look. Checks ask ArtCraft's release feed (one cheap request; GitHub only as a
-    /// fallback), so automatic checks run every five minutes.
+    /// How often to look. Automatic checks run every five minutes; the backend's own throttle
+    /// keeps the GitHub requests well under its hourly limit.
     pub fn seconds(self) -> Option<i64> {
         match self {
             Self::Hour | Self::FourHours | Self::Day => Some(5 * 60),
@@ -119,7 +119,7 @@ pub struct Settings {
     pub notified: BTreeMap<String, String>,
     /// Unix seconds of the last finished check.
     pub last_check: Option<i64>,
-    /// Catalog ids of apps hidden from the main lists (`photocraft`, …).
+    /// Catalog ids of apps hidden from the main lists (`notecraft`, …).
     pub hidden: std::collections::BTreeSet<String>,
     /// The one-time notice that closing the window keeps the launcher in the tray has been shown.
     pub tray_hint_shown: bool,

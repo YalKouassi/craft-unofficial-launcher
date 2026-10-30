@@ -42,15 +42,15 @@ use artcraft_launcher_core::version::{self, Version};
 
 const PORT: u16 = 47_413;
 /// What launchers before the version handshake send (and still the answer to an unknown peer).
-const SHOW: &[u8] = b"artcraft-launcher:show";
+const SHOW: &[u8] = b"craft-unofficial-launcher:show";
 /// `hello <version> <nonce>`: a second start introduces itself with its version and client nonce.
-const HELLO: &str = "artcraft-launcher:hello ";
+const HELLO: &str = "craft-unofficial-launcher:hello ";
 /// `challenge <nonce> <proof>`: running instance challenges newcomer to prove knowledge of token.
-const CHALLENGE: &str = "artcraft-launcher:challenge ";
+const CHALLENGE: &str = "craft-unofficial-launcher:challenge ";
 /// `auth <proof>`: newcomer's response proving possession of token.
-const AUTH: &str = "artcraft-launcher:auth ";
+const AUTH: &str = "craft-unofficial-launcher:auth ";
 /// `running <version>`: the first instance's answer.
-const RUNNING: &str = "artcraft-launcher:running ";
+const RUNNING: &str = "craft-unofficial-launcher:running ";
 /// How long a newer start waits for the old one to quit and free the port.
 const TAKE_OVER_WITHIN: Duration = Duration::from_secs(10);
 /// How large a greeting or challenge-response line may be.
@@ -65,8 +65,11 @@ const MAX_GREETING: usize = 256;
 /// (CWE-522, CWE-287).
 fn token() -> Option<String> {
     use std::io::Read;
-    let dir =
-        dirs::data_local_dir()?.join(if cfg!(any(target_os = "macos", target_os = "windows")) { "ArtCraft Launcher" } else { "artcraft-launcher" });
+    let dir = dirs::data_local_dir()?.join(if cfg!(any(target_os = "macos", target_os = "windows")) {
+        "Craft Unofficial Launcher"
+    } else {
+        "craft-unofficial-launcher"
+    });
     let path = dir.join(".instance-token");
     if let Ok(mut f) = std::fs::File::open(&path) {
         let mut s = String::new();
@@ -166,7 +169,7 @@ pub fn claim(wake: Wake) -> Instance {
             Instance::Secondary
         }
         Ok(Answer::Legacy) => {
-            log::warn!("an older ArtCraft Launcher is running and can't be asked to quit; starting anyway");
+            log::warn!("an older Craft Unofficial Launcher is running and can't be asked to quit; starting anyway");
             Instance::Primary(channel().1)
         }
         // The port is taken by something else: run anyway rather than refuse to start.
@@ -177,7 +180,7 @@ pub fn claim(wake: Wake) -> Instance {
 fn compute_proof(role: &str, token: &str, client_nonce: &str, server_nonce: &str) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
-    hasher.update(b"artcraft-launcher:auth:v1:");
+    hasher.update(b"craft-unofficial-launcher:auth:v1:");
     hasher.update(role.as_bytes());
     hasher.update(b":");
     hasher.update(token.as_bytes());
@@ -463,7 +466,7 @@ mod tests {
             let (mut stream, _) = listener.accept().unwrap();
             let _ = read_message(&mut stream);
             // Rogue server sends fake challenge with forged proof
-            let _ = stream.write_all(b"artcraft-launcher:challenge fake-nonce forged-proof\n");
+            let _ = stream.write_all(b"craft-unofficial-launcher:challenge fake-nonce forged-proof\n");
             let mut next = [0u8; 128];
             stream.read(&mut next).unwrap_or(0)
         });
@@ -595,7 +598,7 @@ mod tests {
                     if let Some(ver) = std::str::from_utf8(&msg).ok().and_then(|m| m.strip_prefix(HELLO)).and_then(version::parse)
                         && version::is_newer(&ver, &v("0.6.1"))
                     {
-                        let _ = s.write_all(b"artcraft-launcher:running 0.6.1\n");
+                        let _ = s.write_all(b"craft-unofficial-launcher:running 0.6.1\n");
                     }
                 }
             }
@@ -615,9 +618,9 @@ mod tests {
 
     #[test]
     fn verdict_reads_defensively() {
-        assert_eq!(verdict(b"artcraft-launcher:running 0.1.0\n", &v("0.1.2")), Answer::TakeOver);
-        assert_eq!(verdict(b"artcraft-launcher:running 0.1.2\n", &v("0.1.2")), Answer::Defer);
-        assert_eq!(verdict(b"artcraft-launcher:running unknown\n", &v("0.1.2")), Answer::Defer);
+        assert_eq!(verdict(b"craft-unofficial-launcher:running 0.1.0\n", &v("0.1.2")), Answer::TakeOver);
+        assert_eq!(verdict(b"craft-unofficial-launcher:running 0.1.2\n", &v("0.1.2")), Answer::Defer);
+        assert_eq!(verdict(b"craft-unofficial-launcher:running unknown\n", &v("0.1.2")), Answer::Defer);
         assert_eq!(verdict(b"garbage\n", &v("0.1.2")), Answer::Defer);
         assert_eq!(verdict(b"", &v("0.1.2")), Answer::Legacy);
     }

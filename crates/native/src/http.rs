@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use sha2::{Digest, Sha256};
 
-const USER_AGENT: &str = concat!("ArtCraftLauncher/", env!("CARGO_PKG_VERSION"));
+const USER_AGENT: &str = concat!("Craft-Unofficial-Launcher/", env!("CARGO_PKG_VERSION"));
 /// Largest JSON or text answer we read.
 const MAX_SMALL: u64 = 4 << 20;
 
@@ -31,7 +31,7 @@ pub enum Fetched {
 #[derive(Clone)]
 pub struct Http {
     small: ureq::Agent,
-    /// ArtCraft's release feed: a short timeout, so a slow server never holds up a check.
+    /// Upstream's release feed (switched off here): a short timeout, so a slow server never holds up a check.
     feed: ureq::Agent,
     no_redirect: ureq::Agent,
     download: ureq::Agent,
@@ -40,7 +40,7 @@ pub struct Http {
     token: Option<String>,
 }
 
-/// Why ArtCraft's release feed couldn't be read.
+/// Why upstream's release feed couldn't be read (it is switched off in this launcher).
 #[derive(Debug)]
 pub struct FeedError {
     pub why: String,
@@ -126,7 +126,7 @@ impl Http {
             .new_agent();
         // An optional token raises GitHub's limit from 60 to 5000 requests an hour. Only ever sent
         // to api.github.com.
-        let token = std::env::var("ARTCRAFT_LAUNCHER_GITHUB_TOKEN").ok().map(|t| t.trim().to_string()).filter(|t| !t.is_empty());
+        let token = std::env::var("CRAFT_UNOFFICIAL_LAUNCHER_GITHUB_TOKEN").ok().map(|t| t.trim().to_string()).filter(|t| !t.is_empty());
         Ok(Self { small, feed, no_redirect, download, direct, direct_download, token })
     }
 
@@ -165,7 +165,7 @@ impl Http {
         }
     }
 
-    /// ArtCraft's release feed, or why it couldn't be read. Never takes more than ~10 seconds.
+    /// Upstream's release feed, or why it couldn't be read (never called here: `backend::check_plan`). Never takes more than ~10 seconds.
     pub fn get_feed(&self, url: &str) -> Result<String, FeedError> {
         let failed = |why: String| FeedError { why, throttled: false, retry_after: None };
         let agent = if is_loopback(url) { &self.direct } else { &self.feed };
@@ -421,7 +421,7 @@ pub enum Transfer {
 
 /// Asks a running download to pause (keeping its partial file) or cancel (deleting it). Shared with
 /// `craft_update`, so a self-update sees the same pause and cancel.
-pub use craft_update::Stop;
+pub use craft_unofficial_update::Stop;
 
 /// Whether a file on disk is the published one: its SHA-256 matches.
 fn matches_published(path: &Path, sha256: &str) -> bool {
@@ -987,7 +987,7 @@ pub(crate) mod tests {
         enc.finish().unwrap()
     }
 
-    /// Live: a real Craft App release asset (`cargo test -p artcraft-launcher-native -- --ignored`).
+    /// Live: a real app release asset (`cargo test -p artcraft-launcher-native -- --ignored`).
     #[test]
     #[ignore = "needs network access"]
     fn downloads_a_real_release_asset() {

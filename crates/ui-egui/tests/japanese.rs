@@ -1,7 +1,7 @@
 //! The Japanese UI, in its own test binary: the UI language is process-wide, so it can't share one
 //! with the English UI tests. Japanese is drawn with the system's Japanese font; where there is
 //! none (CI, minimal Linux installs), the UI stays in English and says why.
-//! `ARTCRAFT_LAUNCHER_SNAPSHOTS=<dir>` also saves screenshots (run with `-- --test-threads=1`).
+//! `CRAFT_UNOFFICIAL_LAUNCHER_SNAPSHOTS=<dir>` also saves screenshots (run with `-- --test-threads=1`).
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -9,7 +9,7 @@ use std::rc::Rc;
 use artcraft_launcher_core::protocol::{Backend, Capabilities, Command, Event, JobPhase, LatestRelease, Origin, PausedDownload, Source};
 use artcraft_launcher_core::release::{Asset, Release};
 use artcraft_launcher_core::status::InstallSource;
-use artcraft_launcher_core::{Arch, Installed, Os, Platform, SUITE, version};
+use artcraft_launcher_core::{Arch, Installed, Os, Platform, version};
 use artcraft_launcher_ui_egui::settings::ViewMode;
 use artcraft_launcher_ui_egui::{Host, LauncherUi, Settings};
 use egui_kittest::Harness;
@@ -89,7 +89,7 @@ fn events() -> Vec<Event> {
     }
     ev.push(Event::Latest { app: "soundcraft".into(), latest: LatestRelease::None, from: Origin::ArtCraftApi });
     let installed = [("photocraft", "0.4.1"), ("lightcraft", "0.4.0"), ("wordcraft", "0.3.0"), ("effectcraft", "0.5.0")];
-    for app in &SUITE {
+    for app in artcraft_launcher_core::apps() {
         let inst = installed.iter().find(|(id, _)| *id == app.id).map(|(_, v)| Installed {
             version: version::parse(v),
             source: InstallSource::MacApp,
@@ -140,7 +140,7 @@ fn harness_language(
 }
 
 fn snapshot(h: &mut Harness<'_, Option<LauncherUi>>, name: &str) {
-    let Some(dir) = std::env::var_os("ARTCRAFT_LAUNCHER_SNAPSHOTS") else { return };
+    let Some(dir) = std::env::var_os("CRAFT_UNOFFICIAL_LAUNCHER_SNAPSHOTS") else { return };
     let img = h.render().unwrap();
     img.save(std::path::Path::new(&dir).join(format!("{name}.png"))).unwrap();
 }
@@ -180,8 +180,9 @@ fn japanese_switches_persists_and_keeps_install_actions() {
     assert_eq!(restored.language, "ja");
     h.get_by_label("完了").click();
     h.run_steps(3);
-    h.get_by_label("画像編集");
-    h.get_by_label_contains("最終確認: 3 分前 · 取得元: ArtCraft API");
+    // Taglines come from each app's descriptor and are shown as written, untranslated.
+    h.get_by_label("Image editing");
+    h.get_by_label_contains("最終確認: 3 分前 · 取得元: リリースフィード");
     h.get_by_label("0.5.0 に更新");
     // Product names stay in English.
     assert!(h.query_by_label("Launcher").is_none());

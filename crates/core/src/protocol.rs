@@ -51,7 +51,7 @@ pub enum Command {
     Cancel {
         app: String,
     },
-    /// Download the newer ArtCraft Launcher, put it in place and restart into it.
+    /// Download the newer Craft Unofficial Launcher, put it in place and restart into it.
     UpdateLauncher,
     /// Fetch the pictures of an app's details page (`core::details`), one [`Event::Screenshot`]
     /// each, the lead picture first. Pictures already saved on this machine arrive without
@@ -61,6 +61,15 @@ pub enum Command {
     },
     /// Change how the backend behaves.
     Configure(BackendOptions),
+    /// Add an unofficial app by its GitHub repo (`owner/name` or a github.com link): fetch its
+    /// latest release's `craft-app.json`, check it, and list the app ([`Event::AddFinished`]).
+    AddApp {
+        repo: String,
+    },
+    /// Take an app off the list. Its install, if any, is left alone.
+    RemoveApp {
+        app: String,
+    },
 }
 
 /// Parent folders for new installs. Existing installations keep their recorded location.
@@ -150,7 +159,8 @@ pub const INSTALL_CANCELLED: &str = "install cancelled";
 /// Which service an app's release information came from (the footer names them).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Origin {
-    /// ArtCraft's release feed (storyteller-web), which polls GitHub for everyone.
+    /// A release feed that answers for every app in one request (upstream's, switched off here;
+    /// only a developer's loopback mirror serves one). The variant keeps upstream's name.
     ArtCraftApi,
     /// GitHub directly: the fallback.
     GitHub,
@@ -159,7 +169,7 @@ pub enum Origin {
 impl Origin {
     pub fn label(self) -> &'static str {
         match self {
-            Self::ArtCraftApi => "ArtCraft API",
+            Self::ArtCraftApi => "release feed",
             Self::GitHub => "GitHub",
         }
     }
@@ -168,7 +178,7 @@ impl Origin {
 /// Where release information came from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Source {
-    /// ArtCraft's release feed (storyteller-web), which polls GitHub for everyone.
+    /// A release feed (only a developer's loopback mirror here; upstream's is switched off).
     Feed,
     /// The GitHub REST API.
     GitHubApi,
@@ -181,7 +191,7 @@ pub enum Source {
 impl Source {
     pub fn label(self) -> &'static str {
         match self {
-            Self::Feed => "ArtCraft",
+            Self::Feed => "release feed",
             Self::GitHubApi => "GitHub",
             Self::GitHubPages => "GitHub (release pages)",
             Self::Cache => "saved results",
@@ -192,6 +202,17 @@ impl Source {
 /// Something the backend wants the UI to know.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Event {
+    /// The list of apps changed (`catalog::apps` has the new one). `problems` holds, by app id,
+    /// why an app's latest descriptor was refused (it keeps its pinned entry meanwhile).
+    CatalogChanged {
+        problems: BTreeMap<String, Vec<String>>,
+    },
+    /// An [`Command::AddApp`] finished: the new app's id, or every reason it was refused.
+    AddFinished {
+        repo: String,
+        result: Result<String, Vec<String>>,
+    },
+
     Latest {
         app: String,
         latest: LatestRelease,
@@ -203,11 +224,11 @@ pub enum Event {
         app: String,
         result: Result<Vec<Release>, String>,
     },
-    /// The latest ArtCraft Launcher release, when it's newer than this one.
+    /// The latest Craft Unofficial Launcher release, when it's newer than this one.
     LauncherUpdate(Release),
     /// The new launcher is in place (or will be, once this one exits): quit now so it can start.
     LauncherRestarting,
-    /// News and alerts from ArtCraft's release feed (replaces any earlier set).
+    /// News and alerts from a release feed (replaces any earlier set).
     Notices {
         announcements: Vec<crate::feed::Notice>,
         alerts: Vec<crate::feed::Notice>,

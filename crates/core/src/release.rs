@@ -24,7 +24,7 @@ pub struct Asset {
 pub struct Release {
     pub tag: String,
     pub version: Option<Version>,
-    /// `PhotoCraft v0.5.0`
+    /// `NoteCraft v0.5.0`
     pub name: String,
     /// Unix seconds; `None` when only the tag is known.
     pub published_at: Option<i64>,
@@ -118,7 +118,7 @@ pub fn download_prefix(repo: &str) -> String {
 /// Whether `url` is a download that truly belongs to `repo`.
 ///
 /// A raw `starts_with(prefix)` check is not enough: a value such as
-/// `https://github.com/storytold/craft-launcher/releases/download/../../../ATTACKER/REPO/releases/download/v1/x`
+/// `https://github.com/someone/notecraft/releases/download/../../../ATTACKER/REPO/releases/download/v1/x`
 /// shares the prefix textually, yet its interpreted path escapes the repository. The link is
 /// accepted only when the text after the prefix is exactly `<tag>/<name>` — two non-empty path
 /// segments with no traversal (`.`/`..`), no additional slashes, no query or fragment, and no

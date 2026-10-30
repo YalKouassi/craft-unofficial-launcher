@@ -17,7 +17,7 @@ pub enum InstallSource {
     Deb,
     /// An RPM package.
     Rpm,
-    /// An Arch Linux package: the release's own (`ai.storyteller.<app>`), or `<app>`, `<app>-bin`
+    /// An Arch Linux package: the release's own (`<bundle id>`), or `<app>`, `<app>-bin`
     /// or `<app>-git` from the AUR or a repository.
     Pacman,
     /// A Flatpak.
@@ -31,7 +31,7 @@ pub enum InstallSource {
 impl InstallSource {
     pub fn label(self) -> &'static str {
         match self {
-            Self::Launcher => "ArtCraft Launcher",
+            Self::Launcher => "Craft Unofficial Launcher",
             Self::MacApp => "Applications folder",
             Self::Msi => "Windows Installer",
             Self::Deb => "Debian package",
@@ -58,7 +58,7 @@ pub struct Installed {
     pub source: InstallSource,
     /// Where it lives: the `.app`, the exe, the AppImage, or the binary of a package.
     pub location: String,
-    /// The package that installed it, for package-manager installs (`photocraft-bin`).
+    /// The package that installed it, for package-manager installs (`notecraft-bin`).
     #[serde(default)]
     pub package: Option<String>,
 }

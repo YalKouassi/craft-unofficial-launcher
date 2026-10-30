@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AppStream metadata (software centres, Flathub). Template: package.sh and the Flatpak
+     manifest substitute @VERSION@ and @DATE@ from Cargo.toml and the build date. -->
+<component type="desktop-application">
+  <id>io.github.yalkouassi.craft-unofficial-launcher</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT OR Apache-2.0</project_license>
+  <name>Craft Unofficial Launcher</name>
+  <summary>Install, update and launch unofficial Craft-style apps</summary>
+  <developer id="io.github.yalkouassi">
+    <name>Craft Unofficial Launcher contributors</name>
+  </developer>
+  <description>
+    <p>
+      Craft Unofficial Launcher installs, updates and launches unofficial Craft-style apps. You add
+      an app by its GitHub repository; the launcher checks the craft-app.json in its releases,
+      installs the right build for your computer, and keeps it up to date. It is not an ArtCraft
+      product and never lists official ArtCraft apps.
+    </p>
+    <ul>
+      <li>One place to add, install and open the unofficial apps you choose</li>
+      <li>Checks GitHub releases for updates and installs them for you</li>
+      <li>Lives in the system tray and tells you when updates are ready</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.yalkouassi.craft-unofficial-launcher.desktop</launchable>
+  <icon type="stock">io.github.yalkouassi.craft-unofficial-launcher</icon>
+  <!-- Only url types known to appstream 0.15 (Ubuntu 22.04, where CI validates): no vcs-browser. -->
+  <url type="homepage">https://github.com/YalKouassi/craft-unofficial-launcher</url>
+  <url type="bugtracker">https://github.com/YalKouassi/craft-unofficial-launcher/issues</url>
+  <url type="help">https://github.com/YalKouassi/craft-unofficial-launcher</url>
+  <categories>
+    <category>Utility</category>
+    <category>PackageManager</category>
+  </categories>
+  <keywords>
+    <keyword>launcher</keyword>
+    <keyword>installer</keyword>
+    <keyword>updater</keyword>
+    <keyword>unofficial</keyword>
+  </keywords>
+  <branding>
+    <color type="primary" scheme_preference="light">#d9dce3</color>
+    <color type="primary" scheme_preference="dark">#26282e</color>
+  </branding>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </supports>
+  <provides>
+    <binary>craft-unofficial-launcher</binary>
+  </provides>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="@VERSION@" date="@DATE@"/>
+  </releases>
+</component>

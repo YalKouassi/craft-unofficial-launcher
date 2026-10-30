@@ -1,0 +1,50 @@
+name: craft-release-check
+description: >-
+  Checks a release folder against the craft-app.json release contract (file names, SHA256SUMS.txt
+  and every checksum in it, the descriptor and its icon) before it is uploaded. Fails the job on
+  any problem.
+
+inputs:
+  dist:
+    description: The folder holding every file the release will attach (craft-app.json, SHA256SUMS.txt, the packages, the icon).
+    required: true
+  repo:
+    description: The GitHub owner/name the release is published under; craft-app.json must name the same repo.
+    required: false
+    default: ${{ github.repository }}
+  tag:
+    description: The release tag (vX.Y.Z or X.Y.Z); every package's version must match it.
+    required: false
+    default: ${{ github.ref_name }}
+  checker-ref:
+    description: What to install craft-release-check from in craft-unofficial-launcher. A 40-character commit SHA (pin this), a tag starting with v, or a branch.
+    required: false
+    default: main
+
+runs:
+  using: composite
+  steps:
+    - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+
+    - name: Install craft-release-check
+      shell: bash
+      env:
+        CHECKER_REF: ${{ inputs.checker-ref }}
+      run: |
+        if [[ "$CHECKER_REF" =~ ^[0-9a-f]{40}$ ]]; then
+          ref=(--rev "$CHECKER_REF")
+        elif [[ "$CHECKER_REF" =~ ^v[0-9] ]]; then
+          ref=(--tag "$CHECKER_REF")
+        else
+          ref=(--branch "$CHECKER_REF")
+        fi
+        cargo install --git https://github.com/YalKouassi/craft-unofficial-launcher "${ref[@]}" craft-release-check --locked
+
+    # Inputs reach the script through the environment, never pasted into it.
+    - name: Check the release
+      shell: bash
+      env:
+        DIST: ${{ inputs.dist }}
+        REPO: ${{ inputs.repo }}
+        TAG: ${{ inputs.tag }}
+      run: craft-release-check dir "$DIST" --repo "$REPO" --tag "$TAG"

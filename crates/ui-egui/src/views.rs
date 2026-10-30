@@ -1,5 +1,5 @@
-//! The header, toolbar, footer, the grid of cards and the table, laid out like the apps page on
-//! getartcraft.com: hairline cells, mono labels and square controls.
+//! The header, toolbar, footer, the grid of cards and the table, laid out in upstream's design
+//! language: hairline cells, mono labels and square controls.
 
 use artcraft_launcher_core::catalog::AppKind;
 use artcraft_launcher_core::details::AppDetails;
@@ -16,8 +16,12 @@ use crate::settings::{Filter, SortKey, ViewMode};
 use crate::theme::{self, Tokens, rgb, tint};
 use crate::widgets::{self, Kind};
 
-/// The byline that says who makes an app: "by ArtCraft" or "by <publisher>". Official apps take
-/// the accent colour, community apps the muted one.
+/// The launcher's name, shown as written in every language.
+const PRODUCT_NAME: &str = artcraft_launcher_core::catalog::LAUNCHER.name;
+
+/// The byline that says who makes an app: "by <publisher>", the publisher as its descriptor
+/// writes it. Apps of the `Official` kind (only in the test catalog) take the accent colour,
+/// community apps the muted one.
 fn kind_badge(ui: &mut Ui, app: &artcraft_launcher_core::CraftApp, t: &Tokens) {
     let text = fmt(tl!("by {name}"), &[("name", app.publisher)]);
     let color = match app.kind {
@@ -92,10 +96,14 @@ impl LauncherUi {
             if bar == TitleBar::MacOs {
                 ui.add_space(TRAFFIC_LIGHTS_W);
             }
-            // The ArtCraft wordmark exactly as supplied, in its own cell.
-            let logo = vec2(14.0 * crate::icons::ARTCRAFT_LOGO_ASPECT, 14.0);
-            let (cell, _) = ui.allocate_exact_size(vec2(logo.x + 40.0, h), Sense::hover());
-            egui::Image::new(crate::icons::artcraft_logo(t.dark)).alt_text(tl!("ArtCraft")).paint_at(ui, Rect::from_center_size(cell.center(), logo));
+            // The launcher's mark and its name (a product name: never translated), in its own cell.
+            ui.add_space(20.0);
+            let mark = vec2(18.0, 18.0);
+            let (cell, _) = ui.allocate_exact_size(vec2(mark.x, h), Sense::hover());
+            egui::Image::new(crate::icons::launcher_mark()).alt_text(PRODUCT_NAME).paint_at(ui, Rect::from_center_size(cell.center(), mark));
+            ui.add_space(10.0);
+            ui.label(widgets::heading(PRODUCT_NAME, 15.0, t.ink_strong));
+            ui.add_space(20.0);
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if bar == TitleBar::Custom {
                     widgets::window_buttons(ui, h);
@@ -105,10 +113,10 @@ impl LauncherUi {
                 }
                 // The controls reserve their actual widths before the secondary text gets space.
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                    if ui.available_width() >= 17.0 + widgets::hud_galley(ui, tl!("Craft App Suite"), t.muted).size().x {
+                    if ui.available_width() >= 17.0 + widgets::hud_galley(ui, tl!("Unofficial apps"), t.muted).size().x {
                         widgets::rule(ui, h);
                         ui.add_space(16.0);
-                        widgets::hud(ui, tl!("Craft App Suite"), t.muted);
+                        widgets::hud(ui, tl!("Unofficial apps"), t.muted);
                     }
                 });
             });
@@ -134,7 +142,7 @@ impl LauncherUi {
         }
     }
 
-    /// A banner over the toolbar when a newer ArtCraft Launcher release is known: either the
+    /// A banner over the toolbar when a newer Craft Unofficial Launcher release is known: either the
     /// update-in-place controls, or a plain link when this build can't update itself.
     fn launcher_update_banner(&mut self, ui: &mut Ui, t: &Tokens, r: &artcraft_launcher_core::Release) {
         egui::Frame::new()
@@ -146,7 +154,7 @@ impl LauncherUi {
                     widgets::tag(ui, tl!("Update"), t.accent, Color32::WHITE);
                     ui.add_space(4.0);
                     ui.label(
-                        RichText::new(fmt(tl!("ArtCraft Launcher {version} is available."), &[("version", &r.version_label())]))
+                        RichText::new(fmt(tl!("Craft Unofficial Launcher {version} is available."), &[("version", &r.version_label())]))
                             .family(theme::medium())
                             .color(t.ink_strong),
                     );
@@ -210,6 +218,7 @@ impl LauncherUi {
         let mut compact = false;
         ui.horizontal(|ui| {
             self.refresh_button(ui);
+            self.add_button(ui);
             // Hiding an app is only undone from here, so the way back to the hidden ones stays
             // while there are any: a toggle, lit while the hidden apps are what the page shows.
             if !self.settings.hidden.is_empty() {
@@ -307,7 +316,7 @@ impl LauncherUi {
         }
     }
 
-    /// News from ArtCraft's release feed (and app renames), until the user dismisses each.
+    /// Notices (app renames and other news), until the user dismisses each.
     fn announcements(&mut self, ui: &mut Ui) {
         let t = Tokens::get(ui.ctx());
         let shown: Vec<artcraft_launcher_core::feed::Notice> =
@@ -359,26 +368,11 @@ impl LauncherUi {
             let short = fmt(tl!("GitHub limit hit; back in {min} min"), &[("min", &min)]);
             (format!("· {full}"), format!("· {short}"))
         });
-        use artcraft_launcher_core::catalog::{GITHUB_URL, SOCIAL, WEBSITE_URL};
-        // Every link is an icon, reading Website, GitHub, Discord, then the social accounts.
+        use artcraft_launcher_core::catalog::{GITHUB_URL, WEBSITE_URL};
+        // Every link is an icon, reading Website, then GitHub (both the launcher's own project).
         let named =
             |name: &'static str, label: &str, url: &'static str| widgets::IconLink { name, label: label.to_string(), tip: label.to_string(), url };
-        let mut links = vec![
-            named("Website", tl!("Website"), WEBSITE_URL),
-            named("GitHub", tl!("GitHub"), GITHUB_URL),
-            widgets::IconLink {
-                name: "Discord",
-                label: tl!("Discord").to_string(),
-                tip: tl!("Join the ArtCraft community on Discord").to_string(),
-                url: self.discord_url,
-            },
-        ];
-        links.extend(SOCIAL.iter().map(|(name, url)| widgets::IconLink {
-            name,
-            label: (*name).to_string(),
-            tip: fmt(tl!("ArtCraft on {name}"), &[("name", name)]),
-            url,
-        }));
+        let links = vec![named("Website", tl!("Website"), WEBSITE_URL), named("GitHub", tl!("GitHub"), GITHUB_URL)];
         let icon = 13.0;
         let spacing = ui.spacing().item_spacing.x;
         // The icons on the right keep their size; the status on the left gets what is left and
@@ -537,7 +531,7 @@ impl LauncherUi {
                     widgets::wordmark_in(ui, app, 22.0, in_colour);
                     kind_badge(ui, app, &t);
                 });
-                ui.add(egui::Label::new(RichText::new(tr_ctx(current(), app.id, app.tagline)).font(tagline.clone()).color(t.muted)).truncate());
+                ui.add(egui::Label::new(RichText::new(app.tagline).font(tagline.clone()).color(t.muted)).truncate());
             });
         });
         ui.add_space(14.0);
@@ -759,7 +753,7 @@ impl LauncherUi {
             let block = title_h + GAP + tagline_h;
             ui.add_space(((ui.available_height() - block) / 2.0).max(0.0));
             widgets::wordmark_in(ui, entry.app, TITLE_SIZE, installed);
-            ui.add(egui::Label::new(RichText::new(tr_ctx(current(), entry.app.id, entry.app.tagline)).size(TAGLINE_SIZE).color(t.muted)).truncate());
+            ui.add(egui::Label::new(RichText::new(entry.app.tagline).size(TAGLINE_SIZE).color(t.muted)).truncate());
         });
     }
 
@@ -1053,6 +1047,7 @@ impl LauncherUi {
                 link(ui, tl!("GitHub repository"), entry.app.repo_url());
                 link(ui, tl!("All releases"), entry.app.releases_url());
             }
+            self.menu_remove(ui, &id);
             self.menu_hide(ui, entry, &id);
         });
     }
@@ -1207,7 +1202,7 @@ mod tests {
         Release {
             tag: "v0.4.1".into(),
             version: None,
-            name: "ArtCraft Launcher v0.4.1".into(),
+            name: "Craft Unofficial Launcher v0.4.1".into(),
             published_at: None,
             html_url: "https://github.com/storytold/craft-launcher/releases/tag/v0.4.1".into(),
             notes: String::new(),

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Craft Unofficial Launcher">
+  <title>Craft Unofficial Launcher</title>
+  <!-- Original mark: three tiles and a corner launch wedge. MIT OR Apache-2.0. -->
+  <rect width="128" height="128" rx="22" fill="#16181d"/>
+  <rect x="22" y="22" width="38" height="38" fill="#f2efe8"/>
+  <rect x="22" y="68" width="38" height="38" fill="#f2efe8"/>
+  <rect x="68" y="68" width="38" height="38" fill="#f2efe8"/>
+  <path d="M68 22h38v38z" fill="#f5a524"/>
+</svg>

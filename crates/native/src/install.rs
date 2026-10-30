@@ -1,11 +1,11 @@
-//! Installing, updating, removing and starting Craft Apps.
+//! Installing, updating, removing and starting unofficial apps.
 //!
 //! Apps go where their platform keeps applications, installed the platform's own way:
 //!
 //! - macOS: the signed `.app` from the release DMG into `/Applications`.
 //! - Windows: the release MSI (Windows Installer), for the current user into
-//!   `%LOCALAPPDATA%\Programs\ArtCraft\<App>` by default. An update keeps the installed copy's folder
-//!   and scope (per-machine copies stay in `C:\Program Files\ArtCraft\<App>`).
+//!   the folder its package chooses by default. An update keeps the installed copy's folder and
+//!   scope (per-machine copies stay where they are under `C:\Program Files`).
 //! - Linux: the distro's own package (`.deb` through apt on the Debian family, `.rpm` through
 //!   dnf/zypper/rpm on the Fedora, Red Hat and SUSE families, read from `os-release`) with the
 //!   system's polkit password prompt; otherwise a Flatpak, otherwise an AppImage in
@@ -171,7 +171,7 @@ pub fn install_at(
     let result = match kind {
         #[cfg(target_os = "macos")]
         PackageKind::Dmg => {
-            macos::install_dmg(app, &file, existing, destination.as_deref(), job.replace, job.paths, &macos::Expect::release(release))
+            macos::install_dmg(app, &file, existing, destination.as_deref(), job.replace, job.paths, &macos::Expect::release(app, release))
                 .map(|path| Some(record(&version, kind, path, Vec::new(), false)))
         }
         #[cfg(windows)]
@@ -361,7 +361,7 @@ fn destination(
 
 /// The folder a new install goes inside when the person hasn't chosen one, so the UI can show
 /// that folder instead of only saying "System default". The answer follows the package: a
-/// Windows MSI installs for everyone into `Program Files\ArtCraft\<App>`, and a 32-bit package
+/// Windows MSI installs for everyone into its own folder in `Program Files`, and a 32-bit package
 /// into the 32-bit Program Files, so `arch` is the package's architecture when the release names
 /// one and `None` (the release is unknown) answers nothing. A portable ZIP unpacks into the
 /// launcher's own `apps` folder. A macOS app goes wherever the installer would put it
@@ -373,10 +373,8 @@ pub fn default_folder(kind: PackageKind, arch: Option<Arch>, paths: &Paths) -> O
     {
         match kind {
             PackageKind::Msi => match arch {
-                Some(Arch::X86) => {
-                    Some(PathBuf::from(std::env::var_os("ProgramFiles(x86)").or_else(|| std::env::var_os("ProgramFiles"))?).join("ArtCraft"))
-                }
-                Some(_) => Some(PathBuf::from(std::env::var_os("ProgramFiles")?).join("ArtCraft")),
+                Some(Arch::X86) => Some(PathBuf::from(std::env::var_os("ProgramFiles(x86)").or_else(|| std::env::var_os("ProgramFiles"))?)),
+                Some(_) => Some(PathBuf::from(std::env::var_os("ProgramFiles")?)),
                 None => None,
             },
             PackageKind::PortableZip => Some(paths.apps()),
@@ -422,7 +420,7 @@ fn selected_folder(folder: &str, writable: bool) -> Result<PathBuf, String> {
 /// Creates and removes a scratch file in `dir`, the way a real write would be refused.
 fn write_probe(dir: &Path) -> std::io::Result<()> {
     let probe = dir.join(format!(
-        ".artcraft-launcher-write-test-{}-{}",
+        ".craft-unofficial-launcher-write-test-{}-{}",
         std::process::id(),
         std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos())
     ));
@@ -509,7 +507,7 @@ pub(crate) fn choose_kinds_with(
     available: &[PackageKind],
     can_pacman: bool,
 ) -> Vec<PackageKind> {
-    // Formats the launcher can't verify for this app (SolidCraft's unsigned macOS build) never count.
+    // Formats the launcher can't verify for this app (an app with no Apple team: its macOS build) never count.
     let available: Vec<PackageKind> = available.iter().copied().filter(|k| app.installs(*k)).collect();
     let available = available.as_slice();
     if let Some(inst) = existing {
@@ -550,7 +548,7 @@ fn can_pacman() -> bool {
 }
 
 /// Whether a pacman install is the release's own Arch package rather than an AUR build. The
-/// release names it by the bundle id (`ai.storyteller.<app>`), which no AUR package uses
+/// release names it by the bundle id (`<bundle id>`, e.g. `io.github.someone.notecraft`), which no AUR package uses
 /// (they are `<app>`, `<app>-bin` and `<app>-git`), so an AUR helper never mistakes it
 /// for one of its own and rebuilds it from source.
 pub fn is_release_arch_package(app: &CraftApp, installed: &Installed) -> bool {
@@ -801,7 +799,7 @@ fn home_env(home: &Path) -> [(&'static str, PathBuf); 5] {
 }
 
 /// Creates the folders an app unpacked by the launcher expects to find, and links the host's
-/// `~/.vst3` and `~/.clap` (SoundCraft's plugin folders) in when they exist, so an app running
+/// `~/.vst3` and `~/.clap` (audio plugin folders) in when they exist, so an app running
 /// inside the sandbox still sees the plugins installed on the host. Every failure here is
 /// ignored: the app is worth starting even if its home is not quite ready.
 #[cfg(target_os = "linux")]
@@ -829,7 +827,7 @@ fn prepare_home(home: &Path) {
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 fn staging_dir(dir: &Path) -> Result<tempfile::TempDir, String> {
     tempfile::Builder::new()
-        .prefix(".artcraft-launcher-")
+        .prefix(".craft-unofficial-launcher-")
         .tempdir_in(dir)
         .map_err(|e| format!("couldn't create a staging folder in {} ({e})", dir.display()))
 }
@@ -846,7 +844,7 @@ fn swap_into_place_via(staged: &Path, dest: &Path, rename: impl Fn(&Path, &Path)
     let backup = if dest.exists() {
         let parent = dest.parent().ok_or("the installed app has no parent folder")?;
         let backup = tempfile::Builder::new()
-            .prefix(".artcraft-launcher-backup-")
+            .prefix(".craft-unofficial-launcher-backup-")
             .tempdir_in(parent)
             .map_err(|e| format!("couldn't create a backup folder in {} ({e})", parent.display()))?;
         rename(dest, &backup.path().join("old")).map_err(|e| format!("couldn't move the old copy aside ({e})"))?;
@@ -1170,7 +1168,7 @@ pub(crate) mod linux {
         let mut remove = |command: &[&str], package: &str| as_root(&SYSTEM, command, OsStr::new(package), stop, phase, JobPhase::Removing);
         let package = installed.package.as_deref().unwrap_or(app.id);
         match installed.source {
-            // The package detected (photocraft, or ai.storyteller.photocraft).
+            // The package detected (notecraft, or io.github.someone.notecraft).
             InstallSource::Deb if system_tool("apt-get").is_some() => remove(&["apt-get", "-o", APT_WAITS, "remove", "-y"], package),
             InstallSource::Deb => remove(&["dpkg", "-r"], package),
             InstallSource::Rpm => {
@@ -1180,7 +1178,7 @@ pub(crate) mod linux {
                     remove(&["rpm", "-e"], package)
                 }
             }
-            // The package detected (photocraft, photocraft-bin or photocraft-git).
+            // The package detected (notecraft, notecraft-bin or notecraft-git).
             InstallSource::Pacman => remove(&["pacman", "-R", "--noconfirm"], package),
             InstallSource::Flatpak => {
                 let id = installed.package.clone().unwrap_or_else(|| app.bundle_id());
@@ -1241,7 +1239,7 @@ pub(crate) mod linux {
         let dest = dir.join(name);
         let ours = previous.is_some_and(|r| r.kind == PackageKind::AppImage && r.path == dest);
         if std::fs::symlink_metadata(&dest).is_ok_and(|m| m.is_dir() || !(replace || ours && m.is_file())) {
-            return Err(format!("{} already exists and wasn't installed by ArtCraft Launcher", dest.display()));
+            return Err(format!("{} already exists and wasn't installed by Craft Unofficial Launcher", dest.display()));
         }
         let staging = super::staging_dir(&dir)?;
         let partial = staging.path().join(name);
@@ -1358,7 +1356,7 @@ pub(crate) mod linux {
         dirs::data_dir()
     }
 
-    /// The app's 128 px icon, as bundled in `assets/app-icons`.
+    /// The app's icon, from its release (checked when the app was added).
     fn icon_png(app: &CraftApp) -> Option<&'static [u8]> {
         artcraft_launcher_core::catalog::app_icon_png(app.id)
     }
@@ -1484,10 +1482,6 @@ pub mod macos {
         super::mac_applications_dir(Path::new(SYSTEM_APPLICATIONS), dirs::home_dir().as_deref())
     }
 
-    /// The Apple Developer team that signs every Craft App and ArtCraft Launcher (Learning
-    /// Machines LLC): the macOS side of the Windows publisher check.
-    pub const TEAM_ID: &str = "DJ6XS33FX8";
-
     /// What a new copy must prove before it replaces anything. The checksum shows the download is
     /// the file the release lists; these show the app inside is the one the release promises.
     pub struct Expect<'a> {
@@ -1499,8 +1493,11 @@ pub mod macos {
     }
 
     impl<'a> Expect<'a> {
-        pub fn release(release: &'a Release) -> Self {
-            Self { team: Some(TEAM_ID), version: release.version.as_ref() }
+        /// What `app`'s `release` must prove: its own Apple team's signature (the macOS side of the
+        /// Windows publisher check). An app that names no team gets an empty one, which no bundle
+        /// carries, so its DMG is refused even if something asked to install it.
+        pub fn release(app: &CraftApp, release: &'a Release) -> Self {
+            Self { team: Some(app.apple_team.unwrap_or("")), version: release.version.as_ref() }
         }
     }
 
@@ -1584,7 +1581,7 @@ pub mod macos {
             && std::fs::symlink_metadata(&dest).is_ok()
             && (std::fs::symlink_metadata(&dest).is_ok_and(|m| m.file_type().is_symlink()) || crate::detect::macos::read_bundle(app, &dest).is_none())
         {
-            return Err(format!("{} already exists and wasn't installed by ArtCraft Launcher", dest.display()));
+            return Err(format!("{} already exists and wasn't installed by Craft Unofficial Launcher", dest.display()));
         }
         let staging = super::staging_dir(&dir)?;
         let staged = staging.path().join(&bundle);
@@ -2162,7 +2159,7 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn an_update_takes_the_folder_only_from_the_records_own_scope() {
-        let folder = Some(PathBuf::from(r"C:\Users\a\AppData\Local\Programs\ArtCraft\DeckCraft"));
+        let folder = Some(PathBuf::from(r"C:\Users\a\AppData\Local\Programs\Example Org\DeckCraft"));
         assert_eq!(keep_if_in_scope(folder.clone(), true), folder);
         assert_eq!(keep_if_in_scope(folder, false), None);
         assert_eq!(keep_if_in_scope(None, true), None);
@@ -2171,10 +2168,10 @@ mod tests {
     /// The default folder shown in the UI is the one a fresh install really uses.
     #[cfg(windows)]
     #[test]
-    fn the_default_folder_is_the_artcraft_suite_folder_in_program_files() {
+    fn the_default_folder_is_program_files() {
         let paths = Paths::under(std::path::Path::new(r"C:\scratch"));
         let program_files = std::env::var_os("ProgramFiles").map(PathBuf::from).unwrap();
-        assert_eq!(default_folder(PackageKind::Msi, Some(Arch::X64), &paths), Some(program_files.join("ArtCraft")));
+        assert_eq!(default_folder(PackageKind::Msi, Some(Arch::X64), &paths), Some(program_files));
         assert_eq!(default_folder(PackageKind::PortableZip, Some(Arch::X64), &paths), Some(paths.apps()));
         assert_eq!(default_folder(PackageKind::Dmg, Some(Arch::X64), &paths), None);
     }
@@ -2186,7 +2183,7 @@ mod tests {
     fn a_32_bit_package_uses_the_32_bit_program_files_and_an_unknown_architecture_answers_nothing() {
         let paths = Paths::under(std::path::Path::new(r"C:\scratch"));
         let x86 = std::env::var_os("ProgramFiles(x86)").or_else(|| std::env::var_os("ProgramFiles")).map(PathBuf::from).unwrap();
-        assert_eq!(default_folder(PackageKind::Msi, Some(Arch::X86), &paths), Some(x86.join("ArtCraft")));
+        assert_eq!(default_folder(PackageKind::Msi, Some(Arch::X86), &paths), Some(x86));
         assert_eq!(default_folder(PackageKind::Msi, None, &paths), None);
     }
 
@@ -2223,7 +2220,7 @@ mod tests {
         let system = tempfile::tempdir().unwrap();
         let victim = tempfile::NamedTempFile::new().unwrap();
         std::fs::write(victim.path(), b"keep me").unwrap();
-        std::os::unix::fs::symlink(victim.path(), system.path().join(".artcraft-launcher-write-test")).unwrap();
+        std::os::unix::fs::symlink(victim.path(), system.path().join(".craft-unofficial-launcher-write-test")).unwrap();
         assert_eq!(mac_applications_dir(system.path(), None), Some(system.path().to_path_buf()));
         assert_eq!(std::fs::read(victim.path()).unwrap(), b"keep me");
     }
@@ -3331,13 +3328,14 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     mod macos_checks {
-        use artcraft_launcher_core::{SUITE, version};
+        use artcraft_launcher_core::version;
 
-        use super::macos::{Expect, TEAM_ID, install_dmg, signed_by};
+        use super::macos::{Expect, install_dmg, signed_by};
+        const TEAM_ID: &str = "DJ6XS33FX8";
         use super::*;
 
         fn photocraft() -> &'static CraftApp {
-            SUITE.iter().find(|a| a.id == "photocraft").unwrap()
+            artcraft_launcher_core::apps().iter().find(|a| a.id == "photocraft").unwrap()
         }
 
         /// A minimal `PhotoCraft.app` at `dir`, reporting `version`.
@@ -3492,7 +3490,8 @@ mod tests {
             let image = dmg(dir.path(), "0.6.0");
             let release = Release { tag: "v0.6.0".into(), version: version::parse("0.6.0"), ..Release::default() };
 
-            let result = install_dmg(photocraft(), &image, Some(&existing), None, false, &Paths::under(dir.path()), &Expect::release(&release));
+            let result =
+                install_dmg(photocraft(), &image, Some(&existing), None, false, &Paths::under(dir.path()), &Expect::release(photocraft(), &release));
             assert_eq!(result, Err("the app isn't signed by its developer, so it wasn't installed".into()));
             assert_eq!(std::fs::read_to_string(current.join("Contents/MacOS/PhotoCraft")).unwrap(), "0.5.0");
             assert_eq!(

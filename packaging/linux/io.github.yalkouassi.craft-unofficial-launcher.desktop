@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Craft Unofficial Launcher
+GenericName=App Launcher
+Comment=Install, update and launch unofficial Craft-style apps
+Exec=craft-unofficial-launcher
+TryExec=craft-unofficial-launcher
+Icon=io.github.yalkouassi.craft-unofficial-launcher
+Terminal=false
+StartupNotify=true
+StartupWMClass=craft-unofficial-launcher
+Categories=Utility;PackageManager;
+Keywords=craft;unofficial;launcher;installer;updater;apps;

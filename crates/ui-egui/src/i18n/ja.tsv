@@ -1,4 +1,4 @@
-# Japanese (ja) catalog for ArtCraft Launcher.
+# Japanese (ja) catalog for Craft Unofficial Launcher.
 # Format: context<TAB>source<TAB>translation
 # Empty context = plain UI string (tl!, t).
 # @id = command-id keyed (tr_id).
@@ -6,15 +6,13 @@
 # @msg = status/error message template (message, msg).
 # Other context = disambiguation for tr_ctx.
 #
-# Clean-room: written from the meaning of ArtCraft Launcher's English labels in neutral Japanese,
+# Clean-room: written from the meaning of Craft Unofficial Launcher's English labels in neutral Japanese,
 # using the terms Japanese-speaking users of creative software know. The user is addressed with
 # the neutral polite form (です・ます), as in most current Japanese software.
 #
 # Coverage: the whole interface — every menu string and tl! literal (complete_menus = true).
-# Left in English on purpose: product name "ArtCraft Launcher" (and its "Launcher" tag), suite
-# name "Craft App Suite",
-# app names (PhotoCraft, LightCraft, FilmCraft, DesignCraft, VectorCraft, PdfCraft, EffectCraft,
-# WordCraft, DeckCraft, GridCraft, CADCraft, SoundCraft, FigCraft), "GitHub", "Discord".
+# Left in English on purpose: the product name "Craft Unofficial Launcher" (and its "Launcher" tag),
+# app names (which come from each app's own descriptor) and "GitHub".
 # Shortcut keys keep their key-cap names (Shift, Alt, Ctrl, Cmd, Esc).
 # Trailing "…" (U+2026) must be preserved. Placeholders {name}, {n}, {version}, {count}, {v},
 # {what}, {unit}, {real}, {e} must appear in translation.
@@ -22,7 +20,7 @@
 # system has none, the interface stays in English.
 
 	Launcher	Launcher
-	Craft App Suite	Craft App Suite
+	Unofficial apps	非公式アプリ
 	by {name}	{name} 提供
 	Open Source Tools for Creatives, Makers, and Builders	クリエイター、メイカー、ビルダーのためのオープンソースツール
 	Settings	設定
@@ -36,14 +34,12 @@
 	Not installed	未インストール
 	Search apps	アプリを検索
 	Sort	並べ替え
-	Suite order	スイート順
 	Name	名前
 	Inspired by	参考アプリ
 	Status	ステータス
 	Installed version	インストール済みバージョン
 	Latest version	最新バージョン
 	Newest release	最新リリース
-	Discord	Discord
 	GitHub	GitHub
 	Website	ウェブサイト
 	Classic apps	クラシックアプリ
@@ -76,7 +72,7 @@
 	Reinstall	再インストール
 	Uninstall…	アンインストール…
 	All releases	すべてのリリース
-	ArtCraft Launcher {version} is available.	ArtCraft Launcher {version} が利用可能です。
+	Craft Unofficial Launcher {version} is available.	Craft Unofficial Launcher {version} が利用可能です。
 	Dismiss	閉じる
 	Update and restart	更新して再起動
 	A new version is available. Would you like to relaunch with the updated version?	新しいバージョンがあります。更新後のバージョンで再起動しますか？
@@ -87,7 +83,7 @@
 	Released {date}	{date} 公開
 	Open on GitHub	GitHub で開く
 	Close	閉じる
-	ArtCraft Launcher {version}	ArtCraft Launcher {version}
+	Craft Unofficial Launcher {version}	Craft Unofficial Launcher {version}
 	Only when I ask	手動で確認したときのみ
 	Automatically download and install updates	更新を自動でダウンロードしてインストール
 	Notify me when an installed app has an update	インストール済みアプリに更新があるときに通知する
@@ -99,14 +95,14 @@
 	Updates always use the format an app was installed with.	更新は常に、アプリをインストールしたときの形式で行われます。
 	Running in the background	バックグラウンドで実行
 	Keep running in the tray when the window is closed	ウィンドウを閉じてもトレイで実行し続ける
-	ArtCraft Launcher is still running	ArtCraft Launcher は実行中です
+	Craft Unofficial Launcher is still running	Craft Unofficial Launcher は実行中です
 	It's in the tray: open it or quit it from the tray icon, or turn this off in the settings.	トレイに入りました。トレイのアイコンから開くか終了できます。設定でこの動作を無効にすることもできます。
 	Show the window on the current desktop	現在のデスクトップにウィンドウを表示
-	Start ArtCraft Launcher when I log in	ログイン時に ArtCraft Launcher を起動
+	Start Craft Unofficial Launcher when I log in	ログイン時に Craft Unofficial Launcher を起動
 	Community	コミュニティ
-	Questions, ideas and news from the ArtCraft team	ArtCraft チームからの質問、アイデア、ニュース
+	Questions, ideas and bug reports about the launcher go to its GitHub repository	ランチャーへの質問、アイデア、バグ報告は GitHub リポジトリへどうぞ
 	Appearance	外観
-	Quit ArtCraft Launcher	ArtCraft Launcher を終了
+	Quit Craft Unofficial Launcher	Craft Unofficial Launcher を終了
 	Done	完了
 	Uninstall {name}?	{name} をアンインストールしますか？
 	The app will be moved to the Trash. Your documents and settings stay.	アプリはゴミ箱に移動されます。ドキュメントと設定はそのまま残ります。
@@ -121,7 +117,6 @@
 	{month} {day}, {year}	{year}年{month}{day}日
 
 	Automatically	自動
-	Every Craft app	すべての Craft アプリ
 	Apps on this computer	このコンピューターのアプリ
 	Installed apps with a newer version	新しいバージョンがあるインストール済みアプリ
 	Apps you can install	インストールできるアプリ
@@ -131,7 +126,7 @@
 	Apps you hid	非表示にしたアプリ
 	Checked {ago} · using {sources}	最終確認: {ago} · 取得元: {sources}
 	{a} and {b}	{a} と {b}
-	Join the Discord	Discord に参加
+	release feed	リリースフィード
 	Learn more	詳細を見る
 	Minimize	最小化
 	Maximize	最大化
@@ -141,7 +136,7 @@
 	Open link	リンクを開く
 	Update	更新
 	{name} icon	{name} のアイコン
-	Loading ArtCraft Launcher…	ArtCraft Launcher を読み込み中…
+	Loading Craft Unofficial Launcher…	Craft Unofficial Launcher を読み込み中…
 	Cancel update	更新をキャンセル
 	Stop waiting; the update can be started again later	待機を中止します。更新は後で再開できます
 	Download again	再ダウンロード
@@ -165,22 +160,6 @@
 	Flatpak bundle	Flatpak バンドル
 	Tarball (.tar.gz)	tarball (.tar.gz)
 
-# Contextual: each app's tagline, keyed by app id
-photocraft	Image editing	画像編集
-vectorcraft	Vector illustration	ベクターイラスト
-filmcraft	Video editing, color and sound	動画編集、カラー、サウンド
-lightcraft	Photo library and raw development	フォトライブラリと RAW 現像
-pdfcraft	Reading, organizing and protecting PDFs	PDF の閲覧、整理、保護
-effectcraft	Motion graphics and visual effects	モーショングラフィックスと視覚効果
-designcraft	Page layout and publishing	ページレイアウトと出版
-wordcraft	Writing and document design	文書作成とデザイン
-deckcraft	Presentations and slide shows	プレゼンテーションとスライドショー
-gridcraft	Spreadsheets and data	表計算とデータ
-solidcraft	Parametric 3D CAD	パラメトリック3D CAD
-cadcraft	Computer-aided design and drafting	コンピューター支援設計と製図
-soundcraft	Recording, editing and mixing audio	オーディオの録音、編集、ミックス
-figcraft	Interface design and prototyping	インターフェースデザインとプロトタイピング
-
 # Contextual: month abbreviations for date rendering
 month	Jan	1月
 month	Feb	2月
@@ -200,8 +179,6 @@ month	Dec	12月
 	Installing for {platform}	{platform} にインストール
 	Downloads for {platform}	{platform} 用のダウンロード
 	No downloads for this system	このシステム用のダウンロードはありません
-	Join the ArtCraft community on Discord	Discord で ArtCraft コミュニティに参加
-	ArtCraft on {name}	{name} の ArtCraft
 	Couldn't open {name}: {e}	{name} を開けませんでした: {e}
 	Download cancelled	ダウンロードをキャンセルしました
 	Available to install	インストール可能
@@ -221,7 +198,6 @@ month	Dec	12月
 	Version {version} installed	バージョン {version} インストール済み
 	Version {latest}	バージョン {latest}
 	No release published yet	まだリリースがありません
-	ArtCraft Launcher	ArtCraft Launcher
 	App	アプリ
 	Latest	最新
 	Released	公開日
@@ -243,7 +219,6 @@ month	Dec	12月
 	Couldn't check for updates: {f}	更新を確認できませんでした: {f}
 	Website (coming soon)	ウェブサイト（近日公開）
 	GitHub repository	GitHub リポジトリ
-	ArtCraft	ArtCraft
 	Update 1 app	1 個のアプリを更新
 	Update all ({count})	すべて更新（{count}）
 	⊞  Grid	⊞  グリッド
@@ -256,7 +231,7 @@ month	Dec	12月
 	Full changelog	完全な変更履歴
 	link	リンク
 	No apps match	一致するアプリがありません
-	Open ArtCraft Launcher to update.	更新するには ArtCraft Launcher を開いてください。
+	Open Craft Unofficial Launcher to update.	更新するには Craft Unofficial Launcher を開いてください。
 	{name} {v} is available	{name} {v} が利用可能です
 	{count} updates are available	{count} 件の更新があります
 	These notes weren't fetched (GitHub's request limit was reached). They're on the release page.	このリリースノートは取得できませんでした（GitHub のリクエスト上限に達しました）。リリースページにあります。
@@ -325,21 +300,19 @@ filter	Installed	インストール済み
 @id	launcher.notes	新着情報
 @id	launcher.dismiss	閉じる
 @id	settings.open	設定
-@id	settings.quit	ArtCraft Launcher を終了
+@id	settings.quit	Craft Unofficial Launcher を終了
 @id	view.grid	グリッド
 @id	view.table	テーブル
 @id	filter.all	すべて
 @id	filter.installed	インストール済み
 @id	filter.updates	更新
 @id	filter.notinstalled	未インストール
-@id	sort.suite	スイート順
 @id	sort.name	名前
 @id	sort.inspired	参考アプリ
 @id	sort.status	ステータス
 @id	sort.installed	インストール済みバージョン
 @id	sort.latest	最新バージョン
 @id	sort.released	最新リリース
-@id	help.discord	Discord
 @id	help.github	GitHub
 @id	help.website	ウェブサイト
 @id	update.check	更新を確認
@@ -349,16 +322,15 @@ filter	Installed	インストール済み
 @id	linux.preferred_kind	新しいアプリのインストール形式
 @id	tray.close_to_tray	ウィンドウを閉じてもトレイで実行し続ける
 @id	tray.show_on_current_desktop	現在のデスクトップにウィンドウを表示
-@id	tray.login_item	ログイン時に ArtCraft Launcher を起動
+@id	tray.login_item	ログイン時に Craft Unofficial Launcher を起動
 @id	appearance.theme	外観
 
 # Tray (menu bar) menu and tooltip
-	Show ArtCraft Launcher	ArtCraft Launcher を表示
+	Show Craft Unofficial Launcher	Craft Unofficial Launcher を表示
+	Visit the website	ウェブサイトを開く
+	Craft Unofficial Launcher on GitHub	GitHub の Craft Unofficial Launcher
 	Check for Updates	更新を確認
-	Visit getartcraft.com	getartcraft.com を開く
-	ArtCraft on GitHub	GitHub の ArtCraft
-	Join the ArtCraft Discord	ArtCraft Discord に参加
-@plural	ArtCraft Launcher · {n} update available|ArtCraft Launcher · {n} updates available	ArtCraft Launcher · {n} 件の更新があります
+@plural	Craft Unofficial Launcher · {n} update available|Craft Unofficial Launcher · {n} updates available	Craft Unofficial Launcher · {n} 件の更新があります
 	Install folder	インストール先フォルダー
 	Default install folder	既定のインストール先フォルダー
 	System default	システムの既定
@@ -371,7 +343,7 @@ filter	Installed	インストール済み
 @msg	couldn't use install folder {path}: {reason}	インストール先フォルダー {path} を使用できませんでした: {reason}
 @msg	this release has no AppImage for a custom install folder	このリリースには任意のインストール先フォルダーで使用できるAppImageがありません
 @msg	custom install folders aren't supported on this system	このシステムではインストール先フォルダーの変更に対応していません
-@msg	{path} already exists and wasn't installed by ArtCraft Launcher	{path} は既に存在し、ArtCraft Launcherでインストールされたものではありません
+@msg	{path} already exists and wasn't installed by Craft Unofficial Launcher	{path} は既に存在し、Craft Unofficial Launcher でインストールされたものではありません
 @msg	couldn't move {path} to Trash ({reason}). Remove it in Finder instead.	{path} をゴミ箱に移動できませんでした（{reason}）。Finderで削除してください。
 	Apps are placed inside this folder.	アプリはこのフォルダー内に配置されます。
 	Replace what's there?	既存の項目を置き換えますか？
@@ -398,3 +370,20 @@ column	Author	作者
 	Older launcher versions require a manual reinstall.	古いランチャーに戻すには手動で再インストールする必要があります。
 	Your files may not open in older versions.	古いバージョンではファイルを開けない場合があります。
 	Enable automatic installs in Settings to follow new nightly builds.	新しいナイトリービルドを自動的に受け取るには、設定で自動インストールを有効にしてください。
+# Unofficial apps: adding and listing them (unofficial.rs).
+	Added {name}	{name} を追加しました
+	Add app	アプリを追加
+	Add an unofficial app by its GitHub repository	GitHub リポジトリから非公式アプリを追加
+	No apps yet	アプリはまだありません
+	Add unofficial Craft-style apps by their GitHub repository. Each app describes itself with a craft-app.json in its releases; the launcher checks it, then installs and updates the app like any other.	非公式の Craft スタイルのアプリを GitHub リポジトリから追加できます。各アプリはリリースに含まれる craft-app.json で自身を説明します。ランチャーはそれを確認してから、ほかのアプリと同じようにインストールと更新を行います。
+	Not created, verified, monitored, or supported by ArtCraft or by this launcher's maintainers. They accept no liability for the code, security, stability, or behavior of this software. Send bugs, security issues and support requests to the app's own repository.	ArtCraft およびこのランチャーのメンテナーは、このソフトウェアを作成、検証、監視、サポートしていません。また、このソフトウェアのコード、セキュリティ、安定性、動作について一切の責任を負いません。バグ、セキュリティ上の問題、サポートの依頼は、アプリ自身のリポジトリに送ってください。
+	Add an unofficial app	非公式アプリを追加
+	Add	追加
+	{repo} wasn't added:	{repo} は追加されませんでした:
+	From the community index	コミュニティインデックスから
+	Loading…	読み込み中…
+	Every app in the index is already in your list.	インデックスのアプリはすべてリストに追加済みです。
+	Being listed vouches for nothing: each app is checked the same way as one you type in.	インデックスに載っていても何の保証にもなりません。各アプリは手入力で追加したアプリと同じように確認されます。
+	Newest release refused	最新リリースを拒否しました
+	Remove from list	リストから削除
+	The app stays installed; only the launcher forgets it	アプリはインストールされたままです。ランチャーがそのアプリを忘れるだけです

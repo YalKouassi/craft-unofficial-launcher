@@ -1,6 +1,6 @@
 [package]
 name = "artcraft-launcher-native"
-description = "ArtCraft Launcher desktop backend: release lookups, detecting installed Craft Apps, installing and updating them"
+description = "Craft Unofficial Launcher desktop backend: release lookups, detecting installed unofficial apps, installing and updating them"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,15 +11,16 @@ publish = false
 workspace = true
 
 [features]
-# Lets ARTCRAFT_LAUNCHER_DOWNLOAD_BASE point the launcher at a developer's own loopback mirror
+# Lets CRAFT_UNOFFICIAL_LAUNCHER_DOWNLOAD_BASE point the launcher at a developer's own loopback mirror
 # (`cargo xtask local serve`). Development only: release builds never enable it, so a shipped
 # launcher can't be steered away from GitHub's releases by an environment variable.
 local-mirror = []
 
 [dependencies]
 artcraft-launcher-core = { workspace = true }
-craft-update = { workspace = true }
+craft-unofficial-update = { workspace = true }
 serde = { workspace = true }
+craft-app-descriptor = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
 dirs = "6"
@@ -31,6 +32,7 @@ sha2 = "0.10"
 ureq = { version = "3.5", default-features = false, features = ["rustls-no-provider", "_ring", "gzip", "platform-verifier"] }
 
 [dev-dependencies]
+artcraft-launcher-core = { workspace = true, features = ["sample-catalog"] }
 # The tests' fake server answers with real gzip streams (Reply::Gzipped), on every platform.
 flate2 = "1"
 

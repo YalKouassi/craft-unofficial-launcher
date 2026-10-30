@@ -2,8 +2,8 @@
 //!
 //! An AppImage installs nothing by itself, so without an entry the app is missing from the
 //! desktop's menu and, on Wayland, the dock can't match the window's app id to an icon. The
-//! launcher writes `<data>/applications/ai.storyteller.<app>.desktop` (the id each app's window
-//! reports) and marks it as its own, so it only ever replaces or removes entries it wrote.
+//! launcher writes `<data>/applications/<bundle id>.desktop` (the id each app's window reports,
+//! e.g. `io.github.someone.notecraft`) and marks it as its own, so it only ever replaces or removes entries it wrote.
 //!
 //! The text is built by pure functions, tested on every platform; only Linux writes the files.
 
@@ -14,26 +14,14 @@ use std::path::Path;
 use artcraft_launcher_core::CraftApp;
 
 /// The key that marks an entry as written by the launcher.
-pub const MARKER: &str = "X-ArtCraft-Launcher=true";
+/// Not the official launcher's key, so neither launcher ever touches the other's entries.
+pub const MARKER: &str = "X-Craft-Unofficial-Launcher=true";
 
-/// The menu categories and the window class each app's own `.desktop` file declares.
-pub fn meta(app: &CraftApp) -> (&'static str, Option<&'static str>) {
-    match app.id {
-        "photocraft" => ("Graphics;2DGraphics;RasterGraphics;Photography;", Some("photocraft")),
-        "pdfcraft" => ("Office;Viewer;", Some("pdfcraft")),
-        "lightcraft" => ("Graphics;2DGraphics;RasterGraphics;Photography;", None),
-        "filmcraft" => ("AudioVideo;Video;AudioVideoEditing;", None),
-        "designcraft" => ("Graphics;Publishing;", None),
-        "vectorcraft" => ("Graphics;2DGraphics;VectorGraphics;", None),
-        "effectcraft" => ("AudioVideo;Video;Graphics;2DGraphics;", None),
-        "wordcraft" => ("Office;WordProcessor;", None),
-        "deckcraft" => ("Office;Presentation;", None),
-        "gridcraft" => ("Office;Spreadsheet;", None),
-        "cadcraft" => ("Graphics;Engineering;VectorGraphics;", None),
-        "soundcraft" => ("AudioVideo;Audio;Midi;Mixer;Sequencer;Recorder;", None),
-        "figcraft" => ("Graphics;2DGraphics;VectorGraphics;X-Design;", Some("figcraft")),
-        _ => ("Graphics;", None),
-    }
+/// The menu categories and the window class of an app's entry. A descriptor names neither, so
+/// every app gets the generic `Utility` category and its bundle id as the window class (the id a
+/// well-behaved app's window reports).
+pub fn meta(_app: &CraftApp) -> (&'static str, Option<&'static str>) {
+    ("Utility;", None)
 }
 
 /// `path` as one quoted argument of an `Exec=` key, per the Desktop Entry spec: inside double
@@ -147,8 +135,8 @@ mod tests {
         let expected = format!(
             "[Desktop Entry]\nType=Application\nName=PhotoCraft\nComment={}\n\
              Exec=\"/home/ana/Applications/photocraft-0.6.0-linux-x86_64.AppImage\" %F\n\
-             Icon=ai.storyteller.photocraft\nTerminal=false\nCategories=Graphics;2DGraphics;RasterGraphics;Photography;\n\
-             StartupWMClass=photocraft\nX-ArtCraft-Launcher=true\n",
+             Icon=ai.storyteller.photocraft\nTerminal=false\nCategories=Utility;\n\
+             StartupWMClass=ai.storyteller.photocraft\nX-Craft-Unofficial-Launcher=true\n",
             app("photocraft").tagline
         );
         assert_eq!(text, expected);
@@ -156,7 +144,9 @@ mod tests {
         let no_icon = render(app("wordcraft"), Path::new("/x/w.AppImage"), false).unwrap();
         assert!(!no_icon.contains("Icon="));
         assert!(no_icon.contains("StartupWMClass=ai.storyteller.wordcraft\n"));
-        assert!(no_icon.contains("Categories=Office;WordProcessor;\n"));
+        assert!(no_icon.contains("Categories=Utility;\n"));
+        // The official launcher's entries are never taken for ours.
+        assert!(!is_ours("[Desktop Entry]\nX-ArtCraft-Launcher=true\n"));
     }
 
     #[test]
@@ -166,7 +156,7 @@ mod tests {
         assert_eq!(exec_quote(Path::new(r"/a\b/100%.AppImage")).unwrap(), r#""/a\\\\b/100%%.AppImage""#);
         assert_eq!(exec_quote(Path::new("/a/line\nbreak.AppImage")), None);
         // The spec forbids `=` in the executable name or path, even quoted.
-        assert_eq!(exec_quote(Path::new("/opt/artcraft=beta/app")), None);
+        assert_eq!(exec_quote(Path::new("/opt/notecraft=beta/app")), None);
         assert!(render(app("photocraft"), Path::new("/a/line\nbreak.AppImage"), true).is_none());
     }
 

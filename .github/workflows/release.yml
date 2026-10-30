@@ -22,8 +22,10 @@ jobs:
     # Intentionally tracked at @main (not SHA-pinned) so org-wide CI improvements, security fixes, and build optimizations propagate without PR churn across all craftapp repos.
     uses: storytold/craft-common-actions/.github/workflows/release.yml@main
     with:
-      app-name: craft-launcher
-      app-title: ArtCraft Launcher
+      app-name: craft-unofficial-launcher
+      # The draft release is named "<app-title> v<version>": "Craft Unofficial Launcher v1.2.3". The
+      # assets come from packaging/*: craft-unofficial-launcher-<version>-<os>-<arch>[-portable].<ext>.
+      app-title: Craft Unofficial Launcher
       version: ${{ inputs.version }}
     secrets:
       APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -40,3 +42,34 @@ jobs:
       AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
       AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
       AZURE_CERT_PROFILE: ${{ secrets.AZURE_CERT_PROFILE }}
+
+  # The launcher updates itself through the same release contract it asks of the apps
+  # (docs/craft-app-spec.md): the release must carry craft-app.json, its icon and a SHA256SUMS.txt
+  # that lists every package. Attach them to the draft, then check the whole release before anyone
+  # publishes it.
+  contract:
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION_OVERRIDE: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - name: Fetch the draft's assets
+        run: |
+          VERSION="${VERSION_OVERRIDE:-$(cargo xtask version)}"
+          echo "TAG=v$VERSION" >> "$GITHUB_ENV"
+          mkdir dist
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --dir dist
+      - name: Add craft-app.json and the icon, and list them in SHA256SUMS.txt
+        run: |
+          cp craft-app.json dist/craft-app.json
+          cp assets/app-icon/hicolor/128x128/apps/io.github.yalkouassi.craft-unofficial-launcher.png dist/craft-unofficial-launcher-128.png
+          cd dist
+          rm -f SHA256SUMS.txt
+          sha256sum -- * > SHA256SUMS.txt
+      - name: Check the release contract
+        run: cargo run -p craft-release-check -- dir dist --repo YalKouassi/craft-unofficial-launcher --tag "$TAG"
+      - name: Attach them to the draft
+        run: gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber dist/craft-app.json dist/craft-unofficial-launcher-128.png dist/SHA256SUMS.txt

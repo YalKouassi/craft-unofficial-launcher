@@ -22,9 +22,9 @@ TMP="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
 # can't be pre-created by another local user to capture the decoded signing bundle (CWE-377). The
 # keychain lives here too; later signing/notarization steps read it through $MACOS_KEYCHAIN and the
 # runner discards RUNNER_TEMP when the job ends.
-WORK="$(mktemp -d "$TMP/artcraft-launcher-signing.XXXXXXXX")"
-KEYCHAIN="$WORK/artcraft-launcher-signing.keychain-db"
-CERT="$WORK/artcraft-launcher-signing.p12"
+WORK="$(mktemp -d "$TMP/craft-unofficial-launcher-signing.XXXXXXXX")"
+KEYCHAIN="$WORK/craft-unofficial-launcher-signing.keychain-db"
+CERT="$WORK/craft-unofficial-launcher-signing.p12"
 KC_PASS="${KEYCHAIN_PASSWORD:-$(openssl rand -hex 24)}"
 
 # The decoded .p12 is removed as soon as it is imported; the keychain must outlive this script so

@@ -6,7 +6,7 @@ use std::rc::Rc;
 use artcraft_launcher_core::protocol::{Backend, Capabilities, Command, Event, JobPhase, LatestRelease, Origin, Source};
 use artcraft_launcher_core::release::{Asset, Release};
 use artcraft_launcher_core::status::InstallSource;
-use artcraft_launcher_core::{Arch, Installed, Os, Platform, SUITE, version};
+use artcraft_launcher_core::{Arch, Installed, Os, Platform, version};
 use artcraft_launcher_ui_egui::settings::ViewMode;
 use artcraft_launcher_ui_egui::{Host, LauncherUi, Settings};
 use egui_kittest::Harness;
@@ -59,7 +59,7 @@ fn release(id: &str, v: &str, at: i64) -> Release {
 
 fn events() -> Vec<Event> {
     let mut ev = Vec::new();
-    for (i, app) in SUITE.iter().enumerate() {
+    for (i, app) in artcraft_launcher_core::apps().iter().enumerate() {
         let latest = LatestRelease::Found(release(app.id, "0.5.0", NOW - 40 * 86_400 - i as i64 * 600));
         ev.push(Event::Latest { app: app.id.into(), latest, from: Origin::ArtCraftApi });
         let installed = matches!(app.id, "photocraft" | "lightcraft").then(|| Installed {
@@ -102,11 +102,12 @@ fn portuguese_ui_translates_labels_dates_and_messages() {
     let mut h = harness(ViewMode::Grid);
     h.run_steps(8);
     assert!(h.query_by_label("Launcher").is_none());
-    h.get_by_label("Craft App Suite");
-    h.get_by_label("Edição de imagens");
+    h.get_by_label("Aplicativos não oficiais");
+    // Taglines come from each app's descriptor and are shown as written, untranslated.
+    h.get_by_label("Image editing");
     h.get_by_label("Atualizar para 0.5.0");
     h.get_by_label_contains("Conferindo a soma de verificação…");
-    h.get_by_label_contains("Verificado há 3 min · via ArtCraft API");
+    h.get_by_label_contains("Verificado há 3 min · via feed de versões");
     h.get_by_label("LightCraft atualizado para 0.5.0");
 
     let mut table = harness(ViewMode::Table);

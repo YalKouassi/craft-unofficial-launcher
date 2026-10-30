@@ -169,7 +169,21 @@ mod tests {
     #[test]
     fn saved_pictures_need_no_network_and_a_failure_ends_the_run() {
         let paths = Paths::under(tempfile::tempdir().unwrap().path());
-        let page = AppDetails::by_id("photocraft").unwrap();
+        // No page is compiled in any more (`details::DETAILS` is empty), so the test brings its own.
+        use artcraft_launcher_core::details::Shot;
+        let page = &AppDetails {
+            id: "notecraft",
+            headline: "Notes.",
+            about: "Takes notes.",
+            features: &[],
+            shots: &[
+                Shot { key: "demo", caption: "One" },
+                Shot { key: "masks", caption: "Two" },
+                Shot { key: "styles", caption: "Three" },
+                Shot { key: "export", caption: "Four" },
+            ],
+            platforms: "macOS, Windows, Linux",
+        };
         // The second picture is saved already; the first and the others need the network, which is not there.
         let second = paths.screenshot(page.id, page.shots[1].key);
         write_atomic(&second, &jpeg()).unwrap();

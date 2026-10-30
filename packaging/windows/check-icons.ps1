@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Check MSI icon references without building or installing ArtCraft Launcher.
+  Check MSI icon references without building or installing Craft Unofficial Launcher.
 
 .DESCRIPTION
   Windows Installer caches each <Icon> under %APPDATA%\Microsoft\Installer\{ProductCode}, which
@@ -11,10 +11,10 @@
   notifications need it).
 #>
 param(
-  [string] $WxsPath = (Join-Path $PSScriptRoot 'artcraft-launcher.wxs')
+  [string] $WxsPath = (Join-Path $PSScriptRoot 'craft-unofficial-launcher.wxs')
 )
 $ErrorActionPreference = 'Stop'
-$AppId = 'ai.storyteller.artcraft-launcher'
+$AppId = 'io.github.yalkouassi.craft-unofficial-launcher'
 [xml] $Wxs = Get-Content -LiteralPath $WxsPath -Raw
 $Ns = [Xml.XmlNamespaceManager]::new($Wxs.NameTable)
 $Ns.AddNamespace('w', 'http://wixtoolset.org/schemas/v4/wxs')

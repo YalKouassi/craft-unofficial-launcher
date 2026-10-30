@@ -7,7 +7,7 @@ version = "0.10.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
-repository = "https://github.com/storytold/craft-launcher"
+repository = "https://github.com/YalKouassi/craft-unofficial-launcher"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -23,6 +23,7 @@ todo = "warn"
 artcraft-launcher-core = { path = "crates/core" }
 artcraft-launcher-ui-egui = { path = "crates/ui-egui" }
 artcraft-launcher-native = { path = "crates/native" }
+craft-app-descriptor = { path = "crates/descriptor" }
 egui = { version = "0.37", features = ["monochrome_emoji_fonts"] }
 eframe = { version = "0.37", default-features = false }
 egui_extras = { version = "0.37", default-features = false }
@@ -33,7 +34,10 @@ semver = { version = "1", features = ["serde"] }
 log = "0.4"
 # All date/time conversion goes through jiff (no hand-rolled calendar code beyond the 400-year range extension; AGENTS.md).
 jiff = "0.2"
-craft-update = { version = "=0.1.0", git = "https://github.com/storytold/craft-libs", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0" }
+# craft-unofficial-update keeps craft-libs' chrono pin.
+chrono = { version = "0.4.45", default-features = false, features = ["std"] }
+# Vendored fork of storytold/craft-libs `crates/update` (rev 92d392cff132eaf53e13afff77f38b5c11b73aa0).
+craft-unofficial-update = { path = "crates/update" }
 craft-ui = { version = "=0.1.0", git = "https://github.com/storytold/craft-libs", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0" }
 
 [profile.dev.package."*"]

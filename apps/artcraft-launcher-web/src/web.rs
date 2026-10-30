@@ -6,14 +6,14 @@ use std::rc::Rc;
 use artcraft_launcher_core::details::{AppDetails, MAX_SCREENSHOT_BYTES, looks_like_jpeg};
 use artcraft_launcher_core::protocol::{Backend, Capabilities, Command, Event, LatestRelease, Origin, Source};
 use artcraft_launcher_core::release::{self, Release};
-use artcraft_launcher_core::{Arch, Os, Platform, SUITE, catalog, version};
+use artcraft_launcher_core::{Arch, Os, Platform, catalog, version};
 use artcraft_launcher_ui_egui::{Host, LauncherUi, Settings, i18n};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 
 const SETTINGS_KEY: &str = "settings";
 
-/// Tell the UI the browser's languages (`?lang=ru` in the address first, as `ARTCRAFT_LAUNCHER_LOCALE`
+/// Tell the UI the browser's languages (`?lang=ru` in the address first, as `CRAFT_UNOFFICIAL_LAUNCHER_LOCALE`
 /// does on the desktop) before the first frame, so the Automatic interface language follows the
 /// browser; and show the loading text in that language.
 fn detect_language() {
@@ -53,7 +53,7 @@ fn detect_language() {
 
     // Update loading text in the detected language.
     if let Some(el) = document.get_element_by_id("launcher_loading") {
-        el.set_text_content(Some(i18n::tr(i18n::system_lang(), "Loading ArtCraft Launcher…")));
+        el.set_text_content(Some(i18n::tr(i18n::system_lang(), "Loading Craft Unofficial Launcher…")));
     }
 }
 pub fn start() {
@@ -174,7 +174,7 @@ impl WebBackend {
         wasm_bindgen_futures::spawn_local(async move {
             events.borrow_mut().push(Event::CheckStarted);
             let mut limited = None;
-            for app in &SUITE {
+            for app in artcraft_launcher_core::apps() {
                 let latest = latest(app.repo, pre).await;
                 if let Err(Some(reset)) = &latest {
                     limited = Some(*reset);

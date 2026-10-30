@@ -70,7 +70,7 @@ fn the_command_line_is_the_single_app_route_with_the_same_parts() {
     std::fs::write(&msi, b"x").unwrap();
     let resolved = crate::install::msi_path(&msi).unwrap();
     let (package, log) = (resolved.display().to_string(), resolved.with_extension("log").display().to_string());
-    let folder = Path::new(r"C:\Program Files\ArtCraft\CADCraft");
+    let folder = Path::new(r"C:\Program Files\Learning Machines LLC\CADCraft");
 
     let all_users = line(&msi, Some(folder), Some(MsiScope::PerMachine)).unwrap();
     assert_eq!(all_users, format!("/i \"{package}\" /passive /norestart /l*v \"{log}\" INSTALLFOLDER=\"{}\" ALLUSERS=1", folder.display()));
@@ -154,7 +154,7 @@ fn a_batch_too_long_for_one_command_line_falls_back_to_one_prompt_each() {
     let short = vec!["/i \"C:\\a.msi\"".to_string()];
     assert!(matches!(plan("C:\\Windows\\System32\\msiexec.exe", &short), Plan::Elevated(_)));
     let long: Vec<String> =
-        (0..200).map(|i| format!("/i \"C:\\Users\\someone\\AppData\\Local\\ArtCraft Launcher\\downloads\\app{i}.msi\"")).collect();
+        (0..200).map(|i| format!("/i \"C:\\Users\\someone\\AppData\\Local\\Craft Unofficial Launcher\\downloads\\app{i}.msi\"")).collect();
     assert!(matches!(plan("C:\\Windows\\System32\\msiexec.exe", &long), Plan::EachAlone));
 }
 

@@ -3,8 +3,8 @@
 //! [`GitHubSource`] asks the GitHub REST API (one request per app, revalidated with ETags) and,
 //! when the API is out of quota, falls back to github.com's release pages: the
 //! `releases/latest` redirect names the tag and `SHA256SUMS.txt` lists every file with its
-//! checksum, which costs no API quota at all. A later [`ReleaseSource`] will ask the ArtCraft
-//! catalog API for every app in one request.
+//! checksum, which costs no API quota at all. Another [`ReleaseSource`] could serve
+//! every app in one request.
 
 use std::collections::BTreeMap;
 use std::sync::{Mutex, PoisonError};

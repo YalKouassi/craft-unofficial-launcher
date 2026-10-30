@@ -1,5 +1,5 @@
 //! The German UI, in its own test binary: the UI language is process-wide, so it can't share one
-//! with the English UI tests. `ARTCRAFT_LAUNCHER_SNAPSHOTS=<dir>` also saves screenshots (run with
+//! with the English UI tests. `CRAFT_UNOFFICIAL_LAUNCHER_SNAPSHOTS=<dir>` also saves screenshots (run with
 //! `-- --test-threads=1`).
 
 use std::cell::{Cell, RefCell};
@@ -8,7 +8,7 @@ use std::rc::Rc;
 use artcraft_launcher_core::protocol::{Backend, Capabilities, Command, Event, JobPhase, LatestRelease, Origin, PausedDownload, Source};
 use artcraft_launcher_core::release::{Asset, Release};
 use artcraft_launcher_core::status::InstallSource;
-use artcraft_launcher_core::{Arch, Installed, Os, Platform, SUITE, version};
+use artcraft_launcher_core::{Arch, Installed, Os, Platform, version};
 use artcraft_launcher_ui_egui::settings::ViewMode;
 use artcraft_launcher_ui_egui::{Host, LauncherUi, Settings};
 use egui_kittest::Harness;
@@ -88,7 +88,7 @@ fn events() -> Vec<Event> {
     }
     ev.push(Event::Latest { app: "soundcraft".into(), latest: LatestRelease::None, from: Origin::ArtCraftApi });
     let installed = [("photocraft", "0.4.1"), ("lightcraft", "0.4.0"), ("wordcraft", "0.3.0"), ("effectcraft", "0.5.0")];
-    for app in &SUITE {
+    for app in artcraft_launcher_core::apps() {
         let inst = installed.iter().find(|(id, _)| *id == app.id).map(|(_, v)| Installed {
             version: version::parse(v),
             source: InstallSource::MacApp,
@@ -139,7 +139,7 @@ fn harness_language(
 }
 
 fn snapshot(h: &mut Harness<'_, Option<LauncherUi>>, name: &str) {
-    let Some(dir) = std::env::var_os("ARTCRAFT_LAUNCHER_SNAPSHOTS") else { return };
+    let Some(dir) = std::env::var_os("CRAFT_UNOFFICIAL_LAUNCHER_SNAPSHOTS") else { return };
     let img = h.render().unwrap();
     img.save(std::path::Path::new(&dir).join(format!("{name}.png"))).unwrap();
 }
@@ -165,8 +165,9 @@ fn german_switches_persists_and_keeps_install_actions() {
     assert_eq!(restored.language, "de");
     h.get_by_label("Fertig").click();
     h.run_steps(3);
-    h.get_by_label("Bildbearbeitung");
-    h.get_by_label_contains("Zuletzt geprüft: vor 3 Min. · über ArtCraft API");
+    // Taglines come from each app's descriptor and are shown as written, untranslated.
+    h.get_by_label("Image editing");
+    h.get_by_label_contains("Zuletzt geprüft: vor 3 Min. · über den Release-Feed");
     h.get_by_label("Auf 0.5.0 aktualisieren");
     // Product names stay in English.
     assert!(h.query_by_label("Launcher").is_none());
@@ -190,8 +191,8 @@ fn german_switches_persists_and_keeps_install_actions() {
         for label in ["Show apps as cards", "Show apps as a table", "Settings", "Check for updates"] {
             let rect = web.get_by_label(artcraft_launcher_ui_egui::i18n::t(label)).rect();
             assert!(rect.left() >= 0.0 && rect.right() <= width, "{width}: {label} {rect:?}");
-            if let Some(text) = web.query_by_label("Craft App Suite") {
-                assert!(!rect.intersects(text.rect()), "{width}: Craft App Suite overlaps {label} {rect:?}");
+            if let Some(text) = web.query_by_label("Inoffizielle Apps") {
+                assert!(!rect.intersects(text.rect()), "{width}: Inoffizielle Apps overlaps {label} {rect:?}");
             }
         }
     }

@@ -1,4 +1,4 @@
-# Czech (cs) catalog for ArtCraft Launcher.
+# Czech (cs) catalog for Craft Unofficial Launcher.
 # Format: context<TAB>source<TAB>translation
 # Empty context = plain UI string (tl!, t). @id = command-id keyed. @plural = one|few|other.
 # @msg = status/error message template. Other context = disambiguation for tr_ctx.
@@ -6,7 +6,7 @@
 # Product and app names, shortcuts, units, file formats, placeholders and trailing ellipses are kept.
 
 	Launcher	Launcher
-	Craft App Suite	Craft App Suite
+	Unofficial apps	Neoficiální aplikace
 	by {name}	od {name}
 	Open Source Tools for Creatives, Makers, and Builders	Open-source nástroje pro kreativce, tvůrce a vývojáře
 	Settings	Nastavení
@@ -20,14 +20,12 @@
 	Not installed	Nenainstalované
 	Search apps	Hledat aplikace
 	Sort	Seřadit
-	Suite order	Pořadí v sadě
 	Name	Název
 	Inspired by	Inspirace
 	Status	Stav
 	Installed version	Nainstalovaná verze
 	Latest version	Nejnovější verze
 	Newest release	Nejnovější vydání
-	Discord	Discord
 	GitHub	GitHub
 	Website	Web
 	Classic apps	Klasické aplikace
@@ -61,7 +59,7 @@
 	Reinstall	Znovu nainstalovat
 	Uninstall…	Odinstalovat…
 	All releases	Všechna vydání
-	ArtCraft Launcher {version} is available.	Je k dispozici ArtCraft Launcher {version}.
+	Craft Unofficial Launcher {version} is available.	Je k dispozici Craft Unofficial Launcher {version}.
 	Dismiss	Skrýt
 	Update and restart	Aktualizovat a restartovat
 	A new version is available. Would you like to relaunch with the updated version?	Je k dispozici nová verze. Chcete aplikaci znovu spustit s aktualizovanou verzí?
@@ -72,7 +70,7 @@
 	Released {date}	Vydáno {date}
 	Open on GitHub	Otevřít na GitHubu
 	Close	Zavřít
-	ArtCraft Launcher {version}	ArtCraft Launcher {version}
+	Craft Unofficial Launcher {version}	Craft Unofficial Launcher {version}
 	Only when I ask	Pouze na vyžádání
 	Automatically download and install updates	Automaticky stahovat a instalovat aktualizace
 	Notify me when an installed app has an update	Upozornit, když má nainstalovaná aplikace aktualizaci
@@ -84,14 +82,14 @@
 	Updates always use the format an app was installed with.	Aktualizace vždy použijí formát, ve kterém byla aplikace nainstalována.
 	Running in the background	Běh na pozadí
 	Keep running in the tray when the window is closed	Po zavření okna ponechat spuštěné v oznamovací oblasti
-	ArtCraft Launcher is still running	ArtCraft Launcher stále běží
+	Craft Unofficial Launcher is still running	Craft Unofficial Launcher stále běží
 	It's in the tray: open it or quit it from the tray icon, or turn this off in the settings.	Je v oznamovací oblasti: otevřete ho nebo ukončete přes ikonu v ní, nebo to vypněte v nastavení.
 	Show the window on the current desktop	Zobrazit okno na aktuální ploše
-	Start ArtCraft Launcher when I log in	Spouštět ArtCraft Launcher po přihlášení
+	Start Craft Unofficial Launcher when I log in	Spouštět Craft Unofficial Launcher po přihlášení
 	Community	Komunita
-	Questions, ideas and news from the ArtCraft team	Dotazy, nápady a novinky od týmu ArtCraft
+	Questions, ideas and bug reports about the launcher go to its GitHub repository	Dotazy, nápady a hlášení chyb launcheru patří do jeho repozitáře na GitHubu
 	Appearance	Vzhled
-	Quit ArtCraft Launcher	Ukončit ArtCraft Launcher
+	Quit Craft Unofficial Launcher	Ukončit Craft Unofficial Launcher
 	Done	Hotovo
 	Uninstall {name}?	Odinstalovat {name}?
 	The app will be moved to the Trash. Your documents and settings stay.	Aplikace bude přesunuta do Koše. Vaše dokumenty a nastavení zůstanou zachovány.
@@ -105,7 +103,6 @@
 	yesterday	včera
 	{month} {day}, {year}	{day}. {month} {year}
 	Automatically	Automaticky
-	Every Craft app	Všechny aplikace Craft
 	Apps on this computer	Aplikace v tomto počítači
 	Installed apps with a newer version	Nainstalované aplikace s novější verzí
 	Apps you can install	Aplikace, které lze nainstalovat
@@ -115,7 +112,7 @@
 	Apps you hid	Aplikace, které jste skryli
 	Checked {ago} · using {sources}	Zkontrolováno {ago} · zdroje: {sources}
 	{a} and {b}	{a} a {b}
-	Join the Discord	Připojit se na Discord
+	release feed	kanál vydání
 	Learn more	Další informace
 	Minimize	Minimalizovat
 	Maximize	Maximalizovat
@@ -125,7 +122,7 @@
 	Open link	Otevřít odkaz
 	Update	Aktualizovat
 	{name} icon	Ikona aplikace {name}
-	Loading ArtCraft Launcher…	Načítání aplikace ArtCraft Launcher…
+	Loading Craft Unofficial Launcher…	Načítání aplikace Craft Unofficial Launcher…
 	Cancel update	Zrušit aktualizaci
 	Stop waiting; the update can be started again later	Přestat čekat; aktualizaci lze spustit znovu později
 	Download again	Stáhnout znovu
@@ -146,20 +143,6 @@
 	Arch package (.pkg.tar.zst)	Balíček Arch (.pkg.tar.zst)
 	Flatpak bundle	Balíček Flatpak
 	Tarball (.tar.gz)	Archiv tar (.tar.gz)
-photocraft	Image editing	Úpravy obrázků
-vectorcraft	Vector illustration	Vektorová ilustrace
-filmcraft	Video editing, color and sound	Střih videa, barvy a zvuk
-lightcraft	Photo library and raw development	Katalog fotografií a vyvolávání RAW
-pdfcraft	Reading, organizing and protecting PDFs	Čtení, organizace a ochrana souborů PDF
-effectcraft	Motion graphics and visual effects	Pohyblivá grafika a vizuální efekty
-designcraft	Page layout and publishing	Sazba stránek a publikování
-wordcraft	Writing and document design	Psaní a návrh dokumentů
-deckcraft	Presentations and slide shows	Prezentace a promítání snímků
-gridcraft	Spreadsheets and data	Tabulky a data
-solidcraft	Parametric 3D CAD	Parametrické 3D CAD
-cadcraft	Computer-aided design and drafting	Počítačem podporované navrhování a kreslení
-soundcraft	Recording, editing and mixing audio	Nahrávání, úpravy a mixování zvuku
-figcraft	Interface design and prototyping	Návrh rozhraní a prototypování
 month	Jan	1.
 month	Feb	2.
 month	Mar	3.
@@ -178,8 +161,6 @@ month	Dec	12.
 	Installing for {platform}	Instalace pro {platform}
 	Downloads for {platform}	Stažení pro {platform}
 	No downloads for this system	Pro tento systém nejsou k dispozici žádné soubory ke stažení
-	Join the ArtCraft community on Discord	Připojit se ke komunitě ArtCraft na Discordu
-	ArtCraft on {name}	ArtCraft na {name}
 	Couldn't open {name}: {e}	{name} nelze otevřít: {e}
 	Download cancelled	Stahování zrušeno
 	Available to install	K dispozici k instalaci
@@ -199,7 +180,6 @@ month	Dec	12.
 	Version {version} installed	Nainstalována verze {version}
 	Version {latest}	Verze {latest}
 	No release published yet	Zatím nebylo zveřejněno žádné vydání
-	ArtCraft Launcher	ArtCraft Launcher
 	App	Aplikace
 	Latest	Nejnovější
 	Released	Vydáno
@@ -221,7 +201,6 @@ month	Dec	12.
 	Couldn't check for updates: {f}	Aktualizace nelze zkontrolovat: {f}
 	Website (coming soon)	Web (již brzy)
 	GitHub repository	Repozitář na GitHubu
-	ArtCraft	ArtCraft
 	Update 1 app	Aktualizovat 1 aplikaci
 	Update all ({count})	Aktualizovat vše ({count})
 	⊞  Grid	⊞  Mřížka
@@ -234,7 +213,7 @@ month	Dec	12.
 	Full changelog	Úplný přehled změn
 	link	odkaz
 	No apps match	Žádné aplikace neodpovídají hledání
-	Open ArtCraft Launcher to update.	Aktualizujte otevřením aplikace ArtCraft Launcher.
+	Open Craft Unofficial Launcher to update.	Aktualizujte otevřením aplikace Craft Unofficial Launcher.
 	{name} {v} is available	Je k dispozici {name} {v}
 	{count} updates are available	Počet dostupných aktualizací: {count}
 	These notes weren't fetched (GitHub's request limit was reached). They're on the release page.	Tyto poznámky se nepodařilo načíst (byl dosažen limit požadavků GitHubu). Najdete je na stránce vydání.
@@ -292,21 +271,19 @@ filter	Installed	Nainstalováno
 @id	launcher.notes	Co je nového
 @id	launcher.dismiss	Zavřít
 @id	settings.open	Nastavení
-@id	settings.quit	Ukončit ArtCraft Launcher
+@id	settings.quit	Ukončit Craft Unofficial Launcher
 @id	view.grid	Mřížka
 @id	view.table	Tabulka
 @id	filter.all	Vše
 @id	filter.installed	Nainstalované
 @id	filter.updates	Aktualizace
 @id	filter.notinstalled	Nenainstalované
-@id	sort.suite	Pořadí v sadě
 @id	sort.name	Název
 @id	sort.inspired	Inspirace
 @id	sort.status	Stav
 @id	sort.installed	Nainstalovaná verze
 @id	sort.latest	Nejnovější verze
 @id	sort.released	Nejnovější vydání
-@id	help.discord	Discord
 @id	help.github	GitHub
 @id	help.website	Web
 @id	update.check	Zkontrolovat aktualizace
@@ -316,14 +293,13 @@ filter	Installed	Nainstalováno
 @id	linux.preferred_kind	Instalovat nové aplikace jako
 @id	tray.close_to_tray	Po zavření okna ponechat spuštěné v oznamovací oblasti
 @id	tray.show_on_current_desktop	Zobrazit okno na aktuální ploše
-@id	tray.login_item	Spouštět ArtCraft Launcher po přihlášení
+@id	tray.login_item	Spouštět Craft Unofficial Launcher po přihlášení
 @id	appearance.theme	Vzhled
-	Show ArtCraft Launcher	Zobrazit ArtCraft Launcher
+	Show Craft Unofficial Launcher	Zobrazit Craft Unofficial Launcher
+	Visit the website	Navštívit web
+	Craft Unofficial Launcher on GitHub	Craft Unofficial Launcher na GitHubu
 	Check for Updates	Zkontrolovat aktualizace
-	Visit getartcraft.com	Navštívit getartcraft.com
-	ArtCraft on GitHub	ArtCraft na GitHubu
-	Join the ArtCraft Discord	Připojit se na ArtCraft Discord
-@plural	ArtCraft Launcher · {n} update available|ArtCraft Launcher · {n} updates available	ArtCraft Launcher · {n} dostupná aktualizace|ArtCraft Launcher · {n} dostupné aktualizace|ArtCraft Launcher · {n} dostupných aktualizací
+@plural	Craft Unofficial Launcher · {n} update available|Craft Unofficial Launcher · {n} updates available	Craft Unofficial Launcher · {n} dostupná aktualizace|Craft Unofficial Launcher · {n} dostupné aktualizace|Craft Unofficial Launcher · {n} dostupných aktualizací
 	Install folder	Instalační složka
 	Default install folder	Výchozí instalační složka
 	System default	Výchozí nastavení systému
@@ -336,7 +312,7 @@ filter	Installed	Nainstalováno
 @msg	couldn't use install folder {path}: {reason}	instalační složku {path} nelze použít: {reason}
 @msg	this release has no AppImage for a custom install folder	toto vydání nemá AppImage pro vlastní instalační složku
 @msg	custom install folders aren't supported on this system	vlastní instalační složky nejsou v tomto systému podporovány
-@msg	{path} already exists and wasn't installed by ArtCraft Launcher	{path} již existuje a nebylo nainstalováno aplikací ArtCraft Launcher
+@msg	{path} already exists and wasn't installed by Craft Unofficial Launcher	{path} již existuje a nebylo nainstalováno aplikací Craft Unofficial Launcher
 @msg	couldn't move {path} to Trash ({reason}). Remove it in Finder instead.	{path} nelze přesunout do koše ({reason}). Odstraňte položku ve Finderu.
 	Apps are placed inside this folder.	Aplikace se umístí do této složky.
 	Replace what's there?	Nahradit, co tam je?
@@ -363,3 +339,20 @@ column	Author	Autor
 	Older launcher versions require a manual reinstall.	Starší verze spouštěče vyžadují ruční přeinstalaci.
 	Your files may not open in older versions.	Starší verze nemusí vaše soubory otevřít.
 	Enable automatic installs in Settings to follow new nightly builds.	Chcete-li automaticky dostávat nová noční sestavení, zapněte v nastavení automatické instalace.
+# Unofficial apps: adding and listing them (unofficial.rs).
+	Added {name}	Přidáno: {name}
+	Add app	Přidat aplikaci
+	Add an unofficial app by its GitHub repository	Přidat neoficiální aplikaci podle jejího repozitáře na GitHubu
+	No apps yet	Zatím žádné aplikace
+	Add unofficial Craft-style apps by their GitHub repository. Each app describes itself with a craft-app.json in its releases; the launcher checks it, then installs and updates the app like any other.	Přidávejte neoficiální aplikace ve stylu Craft podle jejich repozitáře na GitHubu. Každá aplikace se popisuje souborem craft-app.json ve svých vydáních; spouštěč ho zkontroluje a pak aplikaci instaluje a aktualizuje jako kteroukoli jinou.
+	Not created, verified, monitored, or supported by ArtCraft or by this launcher's maintainers. They accept no liability for the code, security, stability, or behavior of this software. Send bugs, security issues and support requests to the app's own repository.	Nevytvořila, neověřila, nesleduje ani nepodporuje je společnost ArtCraft ani správci tohoto spouštěče. Nepřijímají žádnou odpovědnost za kód, bezpečnost, stabilitu ani chování tohoto softwaru. Chyby, bezpečnostní problémy a žádosti o podporu posílejte do vlastního repozitáře aplikace.
+	Add an unofficial app	Přidat neoficiální aplikaci
+	Add	Přidat
+	{repo} wasn't added:	{repo} nebylo přidáno:
+	From the community index	Z komunitního indexu
+	Loading…	Načítání…
+	Every app in the index is already in your list.	Všechny aplikace z indexu už máte v seznamu.
+	Being listed vouches for nothing: each app is checked the same way as one you type in.	Uvedení v indexu nic nezaručuje: každá aplikace se kontroluje stejně jako ta, kterou zadáte sami.
+	Newest release refused	Nejnovější vydání odmítnuto
+	Remove from list	Odebrat ze seznamu
+	The app stays installed; only the launcher forgets it	Aplikace zůstane nainstalovaná; zapomene ji jen spouštěč

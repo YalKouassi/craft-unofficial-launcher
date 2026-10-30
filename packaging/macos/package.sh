@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build, sign and (optionally) notarize the macOS release artifact:
 #
-#   $DIST/artcraft-launcher-<version>-macos-<arch>.dmg   ArtCraft Launcher.app on a drag-to-Applications DMG
+#   $DIST/craft-unofficial-launcher-<version>-macos-<arch>.dmg   Craft Unofficial Launcher.app on a drag-to-Applications DMG
 #
 # Usage: packaging/macos/package.sh [--arch universal|aarch64|x86_64] [--skip-build]
 #
@@ -17,8 +17,9 @@ set -euo pipefail
 HERE="$ROOT/packaging/macos"
 
 # ---- app-specific values ----------------------------------------------------------------------
-PKG=artcraft-launcher          # cargo package and binary
-APP_NAME="ArtCraft Launcher"   # display name: bundle, executable, icon, DMG volume
+CRATE=artcraft-launcher         # cargo package (upstream's name, kept for merges)
+PKG=craft-unofficial-launcher   # binary and release-asset stem
+APP_NAME="Craft Unofficial Launcher"   # display name: bundle, executable, icon, DMG volume
 
 ARCH=universal
 SKIP_BUILD=0
@@ -60,7 +61,7 @@ echo "==> $APP_NAME $VERSION for macOS ($ARCH), identity: $IDENTITY, notarize: $
 if [[ "$SKIP_BUILD" = 0 ]]; then
   args=()
   for t in "${TARGETS[@]}"; do args+=(--target "$t"); done
-  (cd "$ROOT" && cargo build --release --locked -p "$PKG" "${args[@]}")
+  (cd "$ROOT" && cargo build --release --locked -p "$CRATE" "${args[@]}")
 fi
 
 rm -rf "$WORK"
@@ -112,7 +113,7 @@ stapler_retry() {
   exit 1
 }
 
-# ---- ArtCraft Launcher.app ---------------------------------------------------------------------
+# ---- Craft Unofficial Launcher.app ---------------------------------------------------------------------
 echo "==> assembling $APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 # Executable and icon carry the display name (CFBundleExecutable / CFBundleIconFile).
@@ -120,7 +121,7 @@ cp "$WORK/bin/$PKG" "$APP/Contents/MacOS/$APP_NAME"
 cp "$ROOT/assets/app-icon/$PKG.icns" "$APP/Contents/Resources/$APP_NAME.icns"
 cp "$ROOT/NOTICE" "$APP/Contents/Resources/"
 sed -e "s/@VERSION@/$VERSION/g" -e "s/@SHORT_VERSION@/$SHORT_VERSION/g" \
-  -e "s/@BUILD_SHA@/${ARTCRAFT_LAUNCHER_BUILD_SHA:-unknown}/g" \
+  -e "s/@BUILD_SHA@/${CRAFT_UNOFFICIAL_LAUNCHER_BUILD_SHA:-unknown}/g" \
   "$HERE/Info.plist.in" >"$APP/Contents/Info.plist"
 plutil -lint "$APP/Contents/Info.plist"
 if /usr/libexec/PlistBuddy -c 'Print :LSUIElement' "$APP/Contents/Info.plist" >/dev/null 2>&1; then

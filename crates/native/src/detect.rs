@@ -1,7 +1,7 @@
 //! Finding Craft Apps that are already installed, however they got there.
 //!
 //! - macOS: `<App>.app` in `/Applications` or `~/Applications`, read from its `Info.plist`.
-//! - Windows: the Windows Installer's uninstall entries (`Learning Machines LLC`), and portable
+//! - Windows: the Windows Installer's uninstall entries (by the app's MSI publisher), and portable
 //!   copies the launcher unpacked.
 //! - Linux: AppImages in `~/Applications` (where the launcher and AppImageLauncher put them),
 //!   `~/AppImages` (Gear Lever) and `~/.local/bin`, Debian/RPM packages, Flatpaks, and tarball
@@ -72,8 +72,8 @@ fn from_manifest(app: &CraftApp, manifest: &Manifest) -> Option<Installed> {
 
 /// Whether a file name is an AppImage of the app with asset stems `stems`, and the version its
 /// name gives. Matches only the names a release AppImage ends up with: the release's own
-/// (`photocraft-0.6.0-linux-x86_64.AppImage`) and the bare app name Gear Lever renames it to
-/// (`photocraft.appimage`, version unknown). The extension's case doesn't matter.
+/// (`notecraft-0.6.0-linux-x86_64.AppImage`) and the bare app name Gear Lever renames it to
+/// (`notecraft.appimage`, version unknown). The extension's case doesn't matter.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn appimage_version(name: &str, stems: &[&str]) -> Option<Option<String>> {
     let split = name.len().checked_sub(".appimage".len())?;
@@ -88,20 +88,16 @@ pub(crate) fn appimage_version(name: &str, stems: &[&str]) -> Option<Option<Stri
     (parsed.kind == artcraft_launcher_core::PackageKind::AppImage && parsed.token.starts_with("linux-")).then_some(Some(parsed.version))
 }
 
-/// Who our Windows Installer packages name as their publisher. A community app's names its own
-/// ([`CraftApp::msi_publisher`]).
-#[cfg_attr(not(windows), allow(dead_code))]
-const PUBLISHER: &str = "Learning Machines LLC";
-
 /// Whether an uninstall entry's `DisplayName` and `Publisher` are `app`'s, under any name its
-/// installers have registered.
+/// installers have registered. An app that names no publisher ([`CraftApp::msi_publisher`]) never
+/// matches: the launcher won't take a stranger's MSI for it.
 #[cfg_attr(not(windows), allow(dead_code))]
 fn is_installer_entry(app: &CraftApp, display_name: &str, publisher: &str) -> bool {
-    publisher == app.msi_publisher.unwrap_or(PUBLISHER) && app.names().any(|n| n == display_name)
+    app.msi_publisher == Some(publisher) && app.names().any(|n| n == display_name)
 }
 
 /// Where a Windows install of `app` may keep its exe, in the order to try: the entry's
-/// `InstallLocation`, then `<App>` under each install root (the `ArtCraft` suite folder first, then the
+/// `InstallLocation`, then `<App>` under each install root (the publisher's folder first, then the
 /// root itself, for Program Files and the per-user Programs folder) for each name the app has had,
 /// and in each folder `<stem>.exe` for each stem, current first. Doesn't touch the disk.
 #[cfg_attr(not(windows), allow(dead_code))]
@@ -111,14 +107,20 @@ fn exe_candidates(app: &CraftApp, location: Option<&Path>, program_files: &[Path
     dirs.flat_map(|d| app.stems().map(move |s| d.join(format!("{s}.exe")))).collect()
 }
 
-/// The folder under `ArtCraft` that the MSI installs to when it is not the display name: the launcher
-/// installs to `ArtCraft\Launcher`, the apps to `ArtCraft\<App>`.
+/// The publisher's folder under each install root (`<root>\<MSI publisher>`), where an MSI that
+/// groups its publisher's apps puts `<App>`. None for an app that names no MSI publisher, or whose
+/// publisher isn't a plain folder name (a descriptor is hostile input: no separators, no `..`).
 #[cfg_attr(not(windows), allow(dead_code))]
 fn suite_folders(app: &CraftApp, roots: &[PathBuf]) -> Vec<PathBuf> {
-    if app.id != artcraft_launcher_core::catalog::LAUNCHER_ID {
-        return Vec::new();
-    }
-    roots.iter().map(|root| root.join("ArtCraft").join("Launcher")).collect()
+    let Some(publisher) = app.msi_publisher.filter(|p| plain_folder_name(p)) else { return Vec::new() };
+    roots.iter().map(|root| root.join(publisher)).collect()
+}
+
+/// A single, ordinary folder name: joining it to a path can't climb out of or replace that path.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn plain_folder_name(name: &str) -> bool {
+    let mut parts = Path::new(name).components();
+    matches!((parts.next(), parts.next()), (Some(std::path::Component::Normal(n)), None) if n == name) && !name.contains(['/', '\\', ':'])
 }
 
 /// The registry keys an MSI records its install folder in (value `InstallDir`). The launcher's package
@@ -127,13 +129,13 @@ fn suite_folders(app: &CraftApp, roots: &[PathBuf]) -> Vec<PathBuf> {
 fn install_dir_keys(app: &CraftApp) -> Vec<String> {
     let mut keys = vec![format!(r"SOFTWARE\{}", app.name)];
     if app.id == artcraft_launcher_core::catalog::LAUNCHER_ID {
-        keys.push(format!(r"SOFTWARE\{PUBLISHER}\{}", app.name));
+        keys.extend(app.msi_publisher.map(|p| format!(r"SOFTWARE\{p}\{}", app.name)));
     }
     keys
 }
 
-/// Version from `<app> --version` output. Binaries print the machine id (`photocraft 0.7.0`),
-/// the display name (`SoundCraft 0.5.0`), or a former id (`printcraft 0.2.1` for PdfCraft).
+/// Version from `<app> --version` output. Binaries print the machine id (`notecraft 0.7.0`),
+/// the display name (`NoteCraft 0.5.0`), or a former id (`oldnote 0.2.1`).
 #[cfg_attr(not(any(target_os = "linux", target_os = "freebsd")), allow(dead_code))]
 fn parse_cli_version(line: &str, app: &CraftApp) -> Option<version::Version> {
     let line = line.trim();
@@ -184,7 +186,7 @@ pub mod macos {
     pub fn read_bundle(app: &CraftApp, path: &Path) -> Option<Installed> {
         let plist = plist::Value::from_file(path.join("Contents/Info.plist")).ok()?;
         let dict = plist.as_dictionary()?;
-        // Its current bundle id or an older one (SolidCraft was ai.storyteller.solidcraft).
+        // Its current bundle id or an older one (`former_bundles`).
         let id = dict.get("CFBundleIdentifier")?.as_string()?;
         if !app.bundle_ids().any(|b| b == id) {
             return None;
@@ -317,7 +319,7 @@ pub mod windows {
 
     /// The app's exe for one uninstall record, found only in that record's own scope: the recorded
     /// folder first, then `App Paths` in the record's hive and registry view, then the usual folders
-    /// for that scope (`ArtCraft` suite folder first, then the bare root, for older installs). A
+    /// for that scope (the publisher's folder first, then the bare root). A
     /// per-machine entry therefore never stands in for a per-user record, or the other way round.
     fn exe_path(app: &CraftApp, location: Option<PathBuf>, hive: HKEY, flags: u32) -> Option<PathBuf> {
         if let Some(found) = exe_candidates(app, location.as_deref(), &[]).into_iter().find(|p| p.exists()) {
@@ -351,15 +353,12 @@ pub mod windows {
         exe_in_roots(app, roots)
     }
 
-    /// Where the exe may be under the given install roots, best first: the launcher's own folder, then
-    /// the `ArtCraft` suite folder of each root, then the bare roots (older installs). Not checked on
-    /// disk.
+    /// Where the exe may be under the given install roots, best first: `<App>` in the publisher's
+    /// folder of each root, then in the bare roots. Not checked on disk.
     fn candidates_in_roots(app: &CraftApp, roots: &[PathBuf]) -> Vec<PathBuf> {
-        let mut out: Vec<PathBuf> = suite_folders(app, roots).iter().flat_map(|dir| exe_candidates(app, Some(dir), &[])).collect();
-        let mut dirs: Vec<PathBuf> = roots.iter().map(|root| root.join("ArtCraft")).collect();
+        let mut dirs: Vec<PathBuf> = suite_folders(app, roots);
         dirs.extend(roots.iter().cloned());
-        out.extend(exe_candidates(app, None, &dirs));
-        out
+        exe_candidates(app, None, &dirs)
     }
 
     /// The first exe under the given install roots.
@@ -432,7 +431,7 @@ pub mod linux {
     /// pacman, Flatpak). Read once per detection pass.
     pub fn packages() -> Vec<Package> {
         let ours = |name: &str| {
-            artcraft_launcher_core::SUITE.iter().any(|a| {
+            artcraft_launcher_core::apps().iter().any(|a| {
                 [InstallSource::Deb, InstallSource::Rpm, InstallSource::Pacman, InstallSource::Flatpak]
                     .iter()
                     .any(|m| crate::packages::candidate_names(a, *m).iter().any(|n| n == name))
@@ -461,7 +460,7 @@ pub mod linux {
             let mut flatpaks = packages::parse_flatpak_list(&list);
             // Bundles built from a release tarball often list no version: ask Flatpak directly.
             for (id, version) in
-                flatpaks.iter_mut().filter(|(id, v)| v.is_empty() && artcraft_launcher_core::SUITE.iter().any(|a| a.bundle_ids().any(|b| b == *id)))
+                flatpaks.iter_mut().filter(|(id, v)| v.is_empty() && artcraft_launcher_core::apps().iter().any(|a| a.bundle_ids().any(|b| b == *id)))
             {
                 if let Some(v) = crate::process::capture_flatpak(&["info", &arch, id], t).as_deref().and_then(packages::parse_flatpak_info) {
                     *version = v;
@@ -603,7 +602,7 @@ mod linux_tests {
     #[test]
     fn ours_filter_matches_rpm_packages() {
         let ours = |name: &str| {
-            artcraft_launcher_core::SUITE.iter().any(|a| {
+            artcraft_launcher_core::apps().iter().any(|a| {
                 [InstallSource::Deb, InstallSource::Rpm, InstallSource::Pacman, InstallSource::Flatpak]
                     .iter()
                     .any(|m| crate::packages::candidate_names(a, *m).iter().any(|n| n == name))
@@ -669,7 +668,6 @@ mod linux_tests {
 
 #[cfg(test)]
 mod tests {
-    use artcraft_launcher_core::SUITE;
 
     use super::*;
 
@@ -883,7 +881,7 @@ mod tests {
         let pdf = CraftApp::by_id("pdfcraft").unwrap();
         assert!(!is_installer_entry(pdf, "PrintCraft", "Some Other Publisher"));
         assert!(!is_installer_entry(pdf, "PhotoCraft", LEARNING_MACHINES));
-        for a in SUITE.iter().filter(|a| a.id != "pdfcraft") {
+        for a in artcraft_launcher_core::apps().iter().filter(|a| a.id != "pdfcraft") {
             assert!(!is_installer_entry(a, "PrintCraft", LEARNING_MACHINES), "PrintCraft matched {}", a.name);
         }
     }
@@ -915,7 +913,7 @@ mod tests {
     fn apps_without_former_names_match_and_find_their_exe_as_before() {
         let roots = roots();
         let location = PathBuf::from(r"D:\Apps\Somewhere");
-        for a in SUITE.iter().filter(|a| a.former_ids.is_empty() && a.former_names.is_empty()) {
+        for a in artcraft_launcher_core::apps().iter().filter(|a| a.former_ids.is_empty() && a.former_names.is_empty()) {
             let publisher = a.msi_publisher.unwrap_or(LEARNING_MACHINES);
             assert!(is_installer_entry(a, a.name, publisher), "{}", a.name);
             assert!(!is_installer_entry(a, a.name, "Some Other Publisher"), "{}", a.name);
@@ -935,7 +933,7 @@ mod tests {
     fn an_exe_in_the_suite_folder_of_any_root_is_found() {
         let dir = tempfile::tempdir().unwrap();
         let deck = CraftApp::by_id("deckcraft").unwrap();
-        let folder = dir.path().join("ArtCraft").join("DeckCraft");
+        let folder = dir.path().join(LEARNING_MACHINES).join("DeckCraft");
         std::fs::create_dir_all(&folder).unwrap();
         std::fs::write(folder.join("deckcraft.exe"), "x").unwrap();
         assert_eq!(windows::exe_in_roots(deck, vec![dir.path().to_path_buf()]), Some(folder.join("deckcraft.exe")));
@@ -963,7 +961,7 @@ mod tests {
     fn the_copy_with_the_records_version_is_the_one_opened() {
         let v = |s: &str| version::parse(s);
         let old = PathBuf::from(r"D:\Old\deckcraft.exe");
-        let new = PathBuf::from(r"C:\Users\a\AppData\Local\Programs\ArtCraft\DeckCraft\deckcraft.exe");
+        let new = PathBuf::from(r"C:\Users\a\AppData\Local\Programs\Example Org\DeckCraft\deckcraft.exe");
         let version_of = |p: &std::path::Path| if p == old { v("0.11.1") } else { v("0.12.0") };
         let both = vec![old.clone(), new.clone()];
         assert_eq!(windows::pick_candidate(both.clone(), v("0.12.0").as_ref(), version_of), Some(new.clone()));
@@ -981,7 +979,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let deck = CraftApp::by_id("deckcraft").unwrap();
         let (a, b) = (dir.path().join("a"), dir.path().join("b"));
-        let exes: Vec<PathBuf> = [&a, &b].iter().map(|r| r.join("ArtCraft").join("DeckCraft").join("deckcraft.exe")).collect();
+        let exes: Vec<PathBuf> = [&a, &b].iter().map(|r| r.join(LEARNING_MACHINES).join("DeckCraft").join("deckcraft.exe")).collect();
         for exe in &exes {
             std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
             std::fs::write(exe, "x").unwrap();
@@ -992,19 +990,37 @@ mod tests {
     }
 
     #[test]
-    fn the_launcher_msi_installs_to_artcraft_launcher_and_the_apps_do_not() {
+    fn the_suite_folder_is_the_publishers_and_never_artcrafts() {
         let roots = roots();
-        let want: Vec<PathBuf> = roots.iter().map(|root| root.join("ArtCraft").join("Launcher")).collect();
-        assert_eq!(suite_folders(&artcraft_launcher_core::catalog::LAUNCHER, &roots), want);
-        let photo = CraftApp::by_id("photocraft").unwrap();
-        assert!(suite_folders(photo, &roots).is_empty());
+        let launcher = &artcraft_launcher_core::catalog::LAUNCHER;
+        let want: Vec<PathBuf> = roots.iter().map(|root| root.join("Craft Unofficial Launcher contributors")).collect();
+        assert_eq!(suite_folders(launcher, &roots), want);
+        // The launcher's own MSI installs to `<root>\Craft Unofficial Launcher`: `<App>` in the bare root.
+        let exes = exe_candidates(launcher, None, &roots);
+        assert!(exes.contains(&PathBuf::from(r"C:\Program Files\Craft Unofficial Launcher\craft-unofficial-launcher.exe")), "{exes:?}");
+        assert!(!want.iter().chain(&exes).any(|p| p.to_string_lossy().contains("ArtCraft")));
+        // No publisher, no suite folder.
+        let mut none = *CraftApp::by_id("photocraft").unwrap();
+        none.msi_publisher = None;
+        assert!(suite_folders(&none, &roots).is_empty());
+    }
+
+    #[test]
+    fn a_publisher_that_isnt_a_plain_folder_name_gets_no_suite_folder() {
+        for bad in [r"C:\Windows", "..", ".", "a/b", r"a\b", r"\\server\share", "/etc", "C:"] {
+            assert!(!plain_folder_name(bad), "{bad:?}");
+        }
+        assert!(plain_folder_name("Example Org"));
     }
 
     #[test]
     fn the_launcher_records_its_folder_under_the_publisher_key() {
         assert_eq!(
             install_dir_keys(&artcraft_launcher_core::catalog::LAUNCHER),
-            [r"SOFTWARE\ArtCraft Launcher".to_string(), format!(r"SOFTWARE\{LEARNING_MACHINES}\ArtCraft Launcher")]
+            [
+                r"SOFTWARE\Craft Unofficial Launcher".to_string(),
+                r"SOFTWARE\Craft Unofficial Launcher contributors\Craft Unofficial Launcher".to_string()
+            ]
         );
         let photo = CraftApp::by_id("photocraft").unwrap();
         assert_eq!(install_dir_keys(photo), [r"SOFTWARE\PhotoCraft".to_string()]);

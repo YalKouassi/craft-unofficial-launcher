@@ -1,8 +1,11 @@
 # Launcher installation paths
 
-New copies use `%LOCALAPPDATA%\Programs\ArtCraft\Launcher`. Updates restore the existing
-registered exact folder, and an explicit `INSTALLFOLDER` wins. The existing UpgradeCode,
-per-user scope, account-owned registrations, shortcuts and desktop preference remain intact.
+New copies use `%LOCALAPPDATA%\Programs\Craft Unofficial Launcher`, a folder of its own (never the
+official ArtCraft suite's), with its own UpgradeCode and registry key
+(`HKCU\Software\Craft Unofficial Launcher contributors\Craft Unofficial Launcher`), so it installs
+side by side with the official launcher. Updates restore the existing registered exact folder, and
+an explicit `INSTALLFOLDER` wins. The UpgradeCode, per-user scope, account-owned registrations,
+shortcuts and desktop preference stay the same from one version to the next.
 
 The launcher remains per-user only so its current self-update design is not changed into a
 machine-wide deployment. A machine-wide launcher/updater service is separate work, not a

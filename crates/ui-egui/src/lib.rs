@@ -1,4 +1,4 @@
-//! ArtCraft Launcher's interface: the Craft App Suite as a grid of cards or a table, with
+//! Craft Unofficial Launcher's interface: the user's unofficial apps as a grid of cards or a table, with
 //! install, update, open and remove, shared by the desktop and web builds.
 //!
 //! The UI is thin: it draws [`model::AppEntry`]s and sends
@@ -34,6 +34,7 @@ pub mod settings;
 mod settings_dialog;
 mod sheet;
 pub mod theme;
+mod unofficial;
 mod versions;
 mod views;
 mod widgets;

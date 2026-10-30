@@ -57,7 +57,7 @@ pub fn parse_package(text: &str) -> Option<Version> {
     match parts.as_slice() {
         [a, b, c] => Version::parse(&format!("{a}.{b}.{c}")).ok(),
         [a, b] => Version::parse(&format!("{a}.{b}.0")).ok(),
-        // Text around the version, as in `--version` output (`PhotoCraft 0.5.0 (abc, 2026)`):
+        // Text around the version, as in `--version` output (`NoteCraft 0.5.0 (abc, 2026)`):
         // the first `X.Y.Z` run anywhere.
         _ => first_xyz(&t),
     }

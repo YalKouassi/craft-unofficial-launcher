@@ -1,4 +1,4 @@
-# Russian (ru) catalog for ArtCraft Launcher.
+# Russian (ru) catalog for Craft Unofficial Launcher.
 # Format: context<TAB>source<TAB>translation
 # Empty context = plain UI string (tl!, t).
 # @id = command-id keyed (tr_id).
@@ -6,20 +6,18 @@
 # @msg = status/error message template (message, msg).
 # Other context = disambiguation for tr_ctx.
 #
-# Clean-room: written from the meaning of ArtCraft Launcher's English labels in neutral,
+# Clean-room: written from the meaning of Craft Unofficial Launcher's English labels in neutral,
 # international Russian, using terms Russian-speaking users of creative software know.
 #
 # Coverage: the whole interface — every menu string and tl! literal (complete_menus = true).
-# Left in English on purpose: product name "ArtCraft Launcher" (and its "Launcher" tag), suite
-# name "Craft App Suite",
-# app names (PhotoCraft, LightCraft, FilmCraft, DesignCraft, VectorCraft, PdfCraft, EffectCraft,
-# WordCraft, DeckCraft, GridCraft, CADCraft, SoundCraft, FigCraft), "GitHub", "Discord", "Website".
+# Left in English on purpose: the product name "Craft Unofficial Launcher" (and its "Launcher" tag),
+# app names (which come from each app's own descriptor) and "GitHub".
 # Shortcut keys keep their key-cap names (Shift, Alt, Ctrl, Cmd, Esc).
 # Trailing "…" (U+2026) must be preserved. Placeholders {name}, {n}, {version}, {count}, {v},
 # {what}, {unit}, {real}, {e} must appear in translation.
 
 	Launcher	Launcher
-	Craft App Suite	Craft App Suite
+	Unofficial apps	Неофициальные приложения
 	by {name}	от {name}
 	Open Source Tools for Creatives, Makers, and Builders	Инструменты с открытым кодом для творцов, мастеров и создателей
 	Settings	Настройки
@@ -33,13 +31,11 @@
 	Not installed	Не установлены
 	Search apps	Поиск приложений
 	Sort	Сортировка
-	Suite order	По классу приложений
 	Name	Имя
 	Status	Статус
 	Installed version	Установленная версия
 	Latest version	Последняя версия
 	Newest release	Новый релиз
-	Discord	Discord
 	GitHub	GitHub
 	Website	Веб-сайт
 	Classic apps	Классические приложения
@@ -72,7 +68,7 @@
 	Reinstall	Переустановить
 	Uninstall…	Удалить…
 	All releases	Все релизы
-	ArtCraft Launcher {version} is available.	Доступен ArtCraft Launcher {version}.
+	Craft Unofficial Launcher {version} is available.	Доступен Craft Unofficial Launcher {version}.
 	Dismiss	Закрыть
 	Update and restart	Обновить и перезапустить
 	A new version is available. Would you like to relaunch with the updated version?	Доступна новая версия. Перезапустить с обновленной версией?
@@ -83,7 +79,7 @@
 	Released {date}	Релиз {date}
 	Open on GitHub	Открыть на GitHub
 	Close	Закрыть
-	ArtCraft Launcher {version}	ArtCraft Launcher {version}
+	Craft Unofficial Launcher {version}	Craft Unofficial Launcher {version}
 	Only when I ask	Только по запросу
 	Automatically download and install updates	Автоматически скачивать и устанавливать обновления
 	Notify me when an installed app has an update	Уведомлять, когда у установленного приложения есть обновление
@@ -95,14 +91,14 @@
 	Updates always use the format an app was installed with.	Обновления всегда используют формат, с которым приложение было установлено.
 	Running in the background	Работа в фоне
 	Keep running in the tray when the window is closed	Оставаться в трее при закрытии окна
-	ArtCraft Launcher is still running	ArtCraft Launcher продолжает работать
+	Craft Unofficial Launcher is still running	Craft Unofficial Launcher продолжает работать
 	It's in the tray: open it or quit it from the tray icon, or turn this off in the settings.	Он в трее: откройте или закройте его через значок в трее, либо отключите это в настройках.
 	Show the window on the current desktop	Показывать окно на текущем рабочем столе
-	Start ArtCraft Launcher when I log in	Запускать ArtCraft Launcher при входе в систему
+	Start Craft Unofficial Launcher when I log in	Запускать Craft Unofficial Launcher при входе в систему
 	Community	Сообщество
-	Questions, ideas and news from the ArtCraft team	Вопросы, идеи и новости от команды ArtCraft
+	Questions, ideas and bug reports about the launcher go to its GitHub repository	Вопросы, идеи и сообщения об ошибках в лаунчере оставляйте в его репозитории на GitHub
 	Appearance	Внешний вид
-	Quit ArtCraft Launcher	Выйти из ArtCraft Launcher
+	Quit Craft Unofficial Launcher	Выйти из Craft Unofficial Launcher
 	Done	Готово
 	Uninstall {name}?	Удалить {name}?
 	The app will be moved to the Trash. Your documents and settings stay.	Приложение будет перемещено в Корзину. Ваши документы и настройки сохранятся.
@@ -117,7 +113,6 @@
 	{month} {day}, {year}	{day} {month} {year}
 
 	Automatically	Автоматически
-	Every Craft app	Все приложения Craft
 	Apps on this computer	Приложения на этом компьютере
 	Installed apps with a newer version	Установленные приложения, у которых есть новая версия
 	Apps you can install	Приложения, которые можно установить
@@ -127,7 +122,7 @@
 	Apps you hid	Приложения, которые вы скрыли
 	Checked {ago} · using {sources}	Проверено {ago} · через {sources}
 	{a} and {b}	{a} и {b}
-	Join the Discord	Присоединиться к Discord
+	release feed	ленту релизов
 	Learn more	Подробнее
 	Minimize	Свернуть
 	Maximize	Развернуть
@@ -137,7 +132,7 @@
 	Open link	Открыть ссылку
 	Update	Обновить
 	{name} icon	Значок {name}
-	Loading ArtCraft Launcher…	Загрузка ArtCraft Launcher…
+	Loading Craft Unofficial Launcher…	Загрузка Craft Unofficial Launcher…
 	Cancel update	Отменить обновление
 	Stop waiting; the update can be started again later	Не ждать; обновление можно будет запустить позже
 	Download again	Скачать заново
@@ -161,22 +156,6 @@
 	Flatpak bundle	Пакет Flatpak
 	Tarball (.tar.gz)	Архив (.tar.gz)
 
-# Contextual: each app's tagline, keyed by app id
-photocraft	Image editing	Редактирование изображений
-vectorcraft	Vector illustration	Векторная иллюстрация
-filmcraft	Video editing, color and sound	Монтаж видео, цветокоррекция и звук
-lightcraft	Photo library and raw development	Фотобиблиотека и проявка RAW
-pdfcraft	Reading, organizing and protecting PDFs	Чтение, упорядочивание и защита PDF
-effectcraft	Motion graphics and visual effects	Моушн-графика и визуальные эффекты
-designcraft	Page layout and publishing	Вёрстка и издательское дело
-wordcraft	Writing and document design	Тексты и оформление документов
-deckcraft	Presentations and slide shows	Презентации и слайд-шоу
-gridcraft	Spreadsheets and data	Электронные таблицы и данные
-solidcraft	Parametric 3D CAD	Параметрический 3D CAD
-cadcraft	Computer-aided design and drafting	Автоматизированное проектирование и черчение
-soundcraft	Recording, editing and mixing audio	Запись, редактирование и сведение звука
-figcraft	Interface design and prototyping	Дизайн интерфейсов и прототипирование
-
 # Contextual: month abbreviations for date rendering
 month	Jan	янв.
 month	Feb	февр.
@@ -196,8 +175,6 @@ month	Dec	дек.
 	Installing for {platform}	Установка для {platform}
 	Downloads for {platform}	Скачивание для {platform}
 	No downloads for this system	Нет загрузок для этой системы
-	Join the ArtCraft community on Discord	Присоединиться к сообществу ArtCraft в Discord
-	ArtCraft on {name}	ArtCraft в {name}
 	Couldn't open {name}: {e}	Не удалось открыть {name}: {e}
 	Download cancelled	Скачивание отменено
 	Available to install	Доступно для установки
@@ -217,7 +194,6 @@ month	Dec	дек.
 	Version {version} installed	Версия {version} установлена
 	Version {latest}	Версия {latest}
 	No release published yet	Релиз ещё не опубликован
-	ArtCraft Launcher	ArtCraft Launcher
 	App	Приложение
 	Latest	Последняя
 	Released	Релиз
@@ -237,7 +213,6 @@ month	Dec	дек.
 	Downloads the new version, replaces this one and opens it again	Скачивает новую версию, заменяет текущую и открывает её заново
 	Couldn't check for updates: {f}	Не удалось проверить обновления: {f}
 	GitHub repository	Репозиторий GitHub
-	ArtCraft	ArtCraft
 	Update 1 app	Обновить 1 приложение
 	Update all ({count})	Обновить все ({count})
 	⊞  Grid	⊞  Сетка
@@ -250,7 +225,7 @@ month	Dec	дек.
 	Full changelog	Полный список изменений
 	link	ссылка
 	No apps match	Нет подходящих приложений
-	Open ArtCraft Launcher to update.	Откройте ArtCraft Launcher, чтобы обновить.
+	Open Craft Unofficial Launcher to update.	Откройте Craft Unofficial Launcher, чтобы обновить.
 	{name} {v} is available	Доступно обновление {name} {v}
 	{count} updates are available	Доступны обновления ({count})
 	These notes weren't fetched (GitHub's request limit was reached). They're on the release page.	Заметки не были загружены (достигнут лимит запросов GitHub). Они есть на странице релиза.
@@ -305,20 +280,18 @@ filter	Installed	Установлены
 @id	launcher.notes	Что нового
 @id	launcher.dismiss	Закрыть
 @id	settings.open	Настройки
-@id	settings.quit	Выйти из ArtCraft Launcher
+@id	settings.quit	Выйти из Craft Unofficial Launcher
 @id	view.grid	Сетка
 @id	view.table	Таблица
 @id	filter.all	Все
 @id	filter.installed	Установленные
 @id	filter.updates	Обновления
 @id	filter.notinstalled	Не установленные
-@id	sort.suite	По классу приложений
 @id	sort.name	Имя
 @id	sort.status	Статус
 @id	sort.installed	Установленная версия
 @id	sort.latest	Последняя версия
 @id	sort.released	Новый релиз
-@id	help.discord	Discord
 @id	help.github	GitHub
 @id	help.website	Веб-сайт
 @id	update.check	Проверить обновления
@@ -328,15 +301,14 @@ filter	Installed	Установлены
 @id	linux.preferred_kind	Устанавливать новые приложения как
 @id	tray.close_to_tray	Оставаться в трее при закрытии окна
 @id	tray.show_on_current_desktop	Показывать окно на текущем рабочем столе
-@id	tray.login_item	Запускать ArtCraft Launcher при входе в систему
+@id	tray.login_item	Запускать Craft Unofficial Launcher при входе в систему
 @id	appearance.theme	Внешний вид
 
 # Tray (menu bar) menu and tooltip
-	Show ArtCraft Launcher	Показать ArtCraft Launcher
+	Show Craft Unofficial Launcher	Показать Craft Unofficial Launcher
+	Visit the website	Открыть сайт
+	Craft Unofficial Launcher on GitHub	Craft Unofficial Launcher на GitHub
 	Check for Updates	Проверить обновления
-	Visit getartcraft.com	Открыть getartcraft.com
-	ArtCraft on GitHub	ArtCraft на GitHub
-	Join the ArtCraft Discord	Присоединиться к Discord ArtCraft
 	App details	О приложении
 	More actions for {name}	Другие действия для {name}
 	Close (Esc)	Закрыть (Esc)
@@ -351,7 +323,7 @@ filter	Installed	Установлены
 	Next picture (→)	Следующее изображение (→)
 	Loading pictures…	Загрузка изображений…
 	Pictures couldn't be loaded. Reopen this page to try again.	Не удалось загрузить изображения. Откройте страницу снова, чтобы повторить попытку.
-@plural	ArtCraft Launcher · {n} update available|ArtCraft Launcher · {n} updates available	ArtCraft Launcher · {n} обновление|ArtCraft Launcher · {n} обновления|ArtCraft Launcher · {n} обновлений
+@plural	Craft Unofficial Launcher · {n} update available|Craft Unofficial Launcher · {n} updates available	Craft Unofficial Launcher · {n} обновление|Craft Unofficial Launcher · {n} обновления|Craft Unofficial Launcher · {n} обновлений
 	Install folder	Папка установки
 	Default install folder	Папка установки по умолчанию
 	System default	По умолчанию в системе
@@ -364,7 +336,7 @@ filter	Installed	Установлены
 @msg	couldn't use install folder {path}: {reason}	не удалось использовать папку установки {path}: {reason}
 @msg	this release has no AppImage for a custom install folder	в этом выпуске нет AppImage для установки в выбранную папку
 @msg	custom install folders aren't supported on this system	в этой системе выбор папки установки не поддерживается
-@msg	{path} already exists and wasn't installed by ArtCraft Launcher	{path} уже существует и не был установлен через ArtCraft Launcher
+@msg	{path} already exists and wasn't installed by Craft Unofficial Launcher	{path} уже существует и не был установлен через Craft Unofficial Launcher
 @msg	couldn't move {path} to Trash ({reason}). Remove it in Finder instead.	не удалось переместить {path} в Корзину ({reason}). Удалите его через Finder.
 	Apps are placed inside this folder.	Приложения размещаются внутри этой папки.
 	Replace what's there?	Заменить существующее?
@@ -391,3 +363,20 @@ column	Author	Автор
 	Older launcher versions require a manual reinstall.	Для возврата к старой версии лаунчера нужна переустановка вручную.
 	Your files may not open in older versions.	В старой версии ваши файлы могут не открыться.
 	Enable automatic installs in Settings to follow new nightly builds.	Чтобы получать новые ночные сборки, включите автоматическую установку в настройках.
+# Unofficial apps: adding and listing them (unofficial.rs).
+	Added {name}	Добавлено: {name}
+	Add app	Добавить приложение
+	Add an unofficial app by its GitHub repository	Добавить неофициальное приложение по его репозиторию на GitHub
+	No apps yet	Приложений пока нет
+	Add unofficial Craft-style apps by their GitHub repository. Each app describes itself with a craft-app.json in its releases; the launcher checks it, then installs and updates the app like any other.	Добавляйте неофициальные приложения в стиле Craft по их репозиторию на GitHub. Каждое приложение описывает себя файлом craft-app.json в своих релизах; лаунчер проверяет его, а затем устанавливает и обновляет приложение, как любое другое.
+	Not created, verified, monitored, or supported by ArtCraft or by this launcher's maintainers. They accept no liability for the code, security, stability, or behavior of this software. Send bugs, security issues and support requests to the app's own repository.	Не созданы, не проверены, не отслеживаются и не поддерживаются ни ArtCraft, ни сопровождающими этого лаунчера. Они не несут никакой ответственности за код, безопасность, стабильность или поведение этого программного обеспечения. Сообщайте об ошибках и проблемах безопасности и обращайтесь за поддержкой в собственный репозиторий приложения.
+	Add an unofficial app	Добавить неофициальное приложение
+	Add	Добавить
+	{repo} wasn't added:	{repo} не добавлен:
+	From the community index	Из индекса сообщества
+	Loading…	Загрузка…
+	Every app in the index is already in your list.	Все приложения из индекса уже есть в вашем списке.
+	Being listed vouches for nothing: each app is checked the same way as one you type in.	Наличие в индексе ничего не гарантирует: каждое приложение проверяется так же, как то, что вы вводите сами.
+	Newest release refused	Новый релиз отклонён
+	Remove from list	Убрать из списка
+	The app stays installed; only the launcher forgets it	Приложение остаётся установленным; его забывает только лаунчер

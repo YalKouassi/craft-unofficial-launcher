@@ -1,13 +1,16 @@
-//! `cargo xtask local`: install the Craft apps from builds on this machine instead of GitHub.
+//! `cargo xtask local`: install apps from builds on this machine instead of GitHub.
 //!
-//! - `sync` pulls every app's checkout (the sibling folders of this repo), builds and packages the
-//!   ones whose version isn't in the mirror yet, and files the results under
-//!   `<mirror>/<app>/<version>/` with a `SHA256SUMS.txt`.
-//! - `serve` serves the mirror on 127.0.0.1 and answers `release_info.json` with a feed (the same
-//!   shape as ArtCraft's) written fresh from whatever is in the mirror at that moment.
+//! The apps are the community index's (`index/apps.json`), or the ones named with `--only`
+//! (`owner/repo`, or a repo name from the index). Nothing here knows any app by name.
 //!
-//! Run the launcher with `ARTCRAFT_LAUNCHER_DOWNLOAD_BASE=http://127.0.0.1:<port>/` and it installs
-//! and updates from the mirror alone.
+//! - `sync` pulls every app's checkout (the sibling folders of this repo, named like the repo),
+//!   builds and packages the ones whose version isn't in the mirror yet, and files the results
+//!   under `<mirror>/<app>/<version>/` with a `SHA256SUMS.txt`.
+//! - `serve` serves the mirror on 127.0.0.1 and answers `release_info.json` with a feed (the
+//!   upstream launcher's `release_info` shape) written fresh from whatever is in the mirror.
+//!
+//! Run the launcher with `CRAFT_UNOFFICIAL_LAUNCHER_DOWNLOAD_BASE=http://127.0.0.1:<port>/` and it
+//! installs and updates from the mirror alone.
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
@@ -17,22 +20,45 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Every Craft App: (id = folder name, display name). Keep in step with `catalog::SUITE`.
-const APPS: &[(&str, &str)] = &[
-    ("photocraft", "PhotoCraft"),
-    ("vectorcraft", "VectorCraft"),
-    ("filmcraft", "FilmCraft"),
-    ("lightcraft", "LightCraft"),
-    ("pdfcraft", "PdfCraft"),
-    ("effectcraft", "EffectCraft"),
-    ("designcraft", "DesignCraft"),
-    ("figcraft", "FigCraft"),
-    ("wordcraft", "WordCraft"),
-    ("soundcraft", "SoundCraft"),
-    ("deckcraft", "DeckCraft"),
-    ("cadcraft", "CADCraft"),
-    ("gridcraft", "GridCraft"),
-];
+/// One app to mirror: its checkout and mirror folder (`id`, the repo's name in lower case), its
+/// display name and its GitHub `owner/repo`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct App {
+    id: String,
+    name: String,
+    repo: String,
+}
+
+impl App {
+    fn new(repo: &str, name: &str) -> Self {
+        let id = repo.rsplit('/').next().unwrap_or(repo).to_ascii_lowercase();
+        Self { id, name: name.to_string(), repo: repo.to_string() }
+    }
+}
+
+/// The apps in the community index (`index/apps.json`).
+fn index_apps() -> Result<Vec<App>, String> {
+    let path = crate::root().join(craft_app_descriptor::index::INDEX_FILE);
+    let bytes = std::fs::read(&path).map_err(|e| format!("couldn't read {} ({e})", path.display()))?;
+    let index = craft_app_descriptor::index::Index::parse(&bytes)?;
+    Ok(index.apps.iter().map(|e| App::new(&e.repo, &e.name)).collect())
+}
+
+/// `--only`'s apps: `owner/repo` as given, or a repo name looked up in the index.
+fn chosen_apps(only: &[String], index: &[App]) -> Result<Vec<App>, String> {
+    only.iter()
+        .map(|want| {
+            if want.contains('/') {
+                let name = want.rsplit('/').next().unwrap_or(want);
+                return Ok(index.iter().find(|a| a.repo.eq_ignore_ascii_case(want)).cloned().unwrap_or_else(|| App::new(want, name)));
+            }
+            index.iter().find(|a| a.id.eq_ignore_ascii_case(want)).cloned().ok_or_else(|| {
+                let known: Vec<&str> = index.iter().map(|a| a.id.as_str()).collect();
+                format!("unknown app `{want}`: give it as owner/repo, or one of the index's: {}", known.join(", "))
+            })
+        })
+        .collect()
+}
 
 const DEFAULT_PORT: u16 = 8787;
 /// Marks a version folder whose build finished; anything without it is ignored and rebuilt.
@@ -51,7 +77,8 @@ commands:
                   isn't in the mirror yet
       --root <dir>     folder holding the app checkouts (default: this repo's parent)
       --mirror <dir>   where builds are kept (default: <root>/local-mirror)
-      --only <a,b>     just these apps
+      --only <a,b>     just these apps: owner/repo, or a repo name from index/apps.json
+                       (default: every app in index/apps.json)
       --no-pull        don't pull; build what's checked out
       --rebuild        build even when the version is already mirrored
       --every-commit   build each new commit, as <next patch>-dev.<commit time> (0.4.0 builds
@@ -64,14 +91,14 @@ commands:
   status [--root <dir>] [--mirror <dir>]
                   each app's checked-out version and commit next to what's mirrored
 
-then: ARTCRAFT_LAUNCHER_DOWNLOAD_BASE=http://127.0.0.1:8787/ cargo run -p artcraft-launcher --features local-mirror
+then: CRAFT_UNOFFICIAL_LAUNCHER_DOWNLOAD_BASE=http://127.0.0.1:8787/ cargo run -p artcraft-launcher --features local-mirror
 ";
 
 #[derive(Clone)]
 struct Opts {
     root: PathBuf,
     mirror: PathBuf,
-    only: Option<Vec<String>>,
+    apps: Vec<App>,
     pull: bool,
     rebuild: bool,
     every_commit: bool,
@@ -102,10 +129,11 @@ fn parse(args: &[&str]) -> Result<Opts, String> {
     let default_root = crate::root().parent().map(Path::to_path_buf).ok_or("this repo has no parent folder")?;
     let mut root = None;
     let mut mirror = None;
+    let mut only: Option<Vec<String>> = None;
     let mut o = Opts {
         root: PathBuf::new(),
         mirror: PathBuf::new(),
-        only: None,
+        apps: Vec::new(),
         pull: true,
         rebuild: false,
         every_commit: false,
@@ -121,7 +149,7 @@ fn parse(args: &[&str]) -> Result<Opts, String> {
         match *arg {
             "--root" => root = Some(PathBuf::from(value()?)),
             "--mirror" => mirror = Some(PathBuf::from(value()?)),
-            "--only" => o.only = Some(value()?.split(',').map(|s| s.trim().to_lowercase()).filter(|s| !s.is_empty()).collect()),
+            "--only" => only = Some(value()?.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()),
             "--no-pull" => o.pull = false,
             "--rebuild" => o.rebuild = true,
             "--every-commit" => o.every_commit = true,
@@ -137,16 +165,12 @@ fn parse(args: &[&str]) -> Result<Opts, String> {
     }
     o.root = root.unwrap_or(default_root);
     o.mirror = mirror.unwrap_or_else(|| o.root.join("local-mirror"));
-    if let Some(only) = &o.only
-        && let Some(bad) = only.iter().find(|id| !APPS.iter().any(|(a, _)| a == id))
-    {
-        return Err(format!("unknown app `{bad}` (known: {})", APPS.iter().map(|a| a.0).collect::<Vec<_>>().join(", ")));
-    }
+    let index = index_apps()?;
+    o.apps = match &only {
+        Some(only) => chosen_apps(only, &index)?,
+        None => index,
+    };
     Ok(o)
-}
-
-fn selected(o: &Opts) -> impl Iterator<Item = &'static (&'static str, &'static str)> + '_ {
-    APPS.iter().filter(|(id, _)| o.only.as_ref().is_none_or(|only| only.iter().any(|x| x == id)))
 }
 
 // ---- sync ---------------------------------------------------------------------------------------
@@ -161,10 +185,10 @@ enum Outcome {
 fn sync(o: &Opts) -> Result<(), String> {
     std::fs::create_dir_all(&o.mirror).map_err(|e| format!("couldn't create {} ({e})", o.mirror.display()))?;
     let mut results = Vec::new();
-    for (id, name) in selected(o) {
-        eprintln!("\n=== {name} ===");
-        let outcome = sync_one(o, id, name).unwrap_or_else(Outcome::Failed);
-        results.push((*name, outcome));
+    for app in &o.apps {
+        eprintln!("\n=== {} ===", app.name);
+        let outcome = sync_one(o, app).unwrap_or_else(Outcome::Failed);
+        results.push((app.name.as_str(), outcome));
     }
     println!("\nlocal sync: {}", o.mirror.display());
     let mut failed = 0;
@@ -183,10 +207,11 @@ fn sync(o: &Opts) -> Result<(), String> {
     if failed == 0 { Ok(()) } else { Err(format!("{failed} app(s) failed")) }
 }
 
-fn sync_one(o: &Opts, id: &str, name: &str) -> Result<Outcome, String> {
+fn sync_one(o: &Opts, app: &App) -> Result<Outcome, String> {
+    let (id, name) = (app.id.as_str(), app.name.as_str());
     let repo = o.root.join(id);
     if !repo.join(".git").exists() {
-        return Ok(Outcome::Skipped(format!("no checkout at {} (git clone git@github.com:storytold/{id}.git)", repo.display())));
+        return Ok(Outcome::Skipped(format!("no checkout at {} (git clone https://github.com/{}.git {id})", repo.display(), app.repo)));
     }
     let mut pull_note = String::new();
     if o.pull {
@@ -242,7 +267,7 @@ fn sync_one(o: &Opts, id: &str, name: &str) -> Result<Outcome, String> {
     if o.every_commit {
         // Every app's packaging reads <APP>_VERSION in place of its Cargo.toml version, and keeps
         // the full version (with the -dev suffix) in the installed copy, where the launcher reads it.
-        cmd.env(format!("{}_VERSION", id.to_ascii_uppercase()), &version);
+        cmd.env(format!("{}_VERSION", id.to_ascii_uppercase().replace('-', "_")), &version);
     }
     eprintln!("$ {name}: packaging {version} ({commit})");
     let status = cmd.status().map_err(|e| format!("couldn't run the packaging script ({e})"))?;
@@ -340,7 +365,7 @@ fn write(path: &Path, text: &str) -> Result<(), String> {
 
 fn status(o: &Opts) -> Result<(), String> {
     println!("{:<12} {:<12} {:<14} {:<12} built from", "app", "checkout", "commit", "mirrored");
-    for (id, name) in selected(o) {
+    for App { id, name, .. } in &o.apps {
         let repo = o.root.join(id);
         let (version, commit) = if repo.join(".git").exists() {
             (checkout_version(&repo).unwrap_or_else(|_| "?".into()), git(&repo, &["rev-parse", "--short=12", "HEAD"]).unwrap_or_else(|_| "?".into()))
@@ -423,11 +448,11 @@ fn sha256(path: &Path) -> Result<String, String> {
 
 // ---- feed ---------------------------------------------------------------------------------------
 
-/// A feed (ArtCraft's `release_info` shape) for the newest complete version of every app.
-fn feed(mirror: &Path, base: &str) -> String {
+/// A feed (the upstream launcher's `release_info` shape) for the newest complete version of each app.
+fn feed(mirror: &Path, base: &str, list: &[App]) -> String {
     let now = rfc3339(unix_now());
     let mut apps = String::new();
-    for (id, name) in APPS {
+    for App { id, name, repo } in list {
         let app_dir = mirror.join(id);
         let Some(version) = latest_version(&app_dir) else { continue };
         let dir = app_dir.join(&version);
@@ -454,7 +479,7 @@ fn feed(mirror: &Path, base: &str) -> String {
             r#"{}:{{"name":{},"repo":{},"latest_release":{{"tag":{},"name":{},"published_at":{},"html_url":"","prerelease":false,"notes_markdown":{},"assets":[{}]}},"app_last_fetched":{}}}"#,
             json_str(id),
             json_str(name),
-            json_str(&format!("storytold/{id}")),
+            json_str(repo),
             json_str(&format!("v{version}")),
             json_str(&format!("{name} v{version} (local build)")),
             json_str(&published),
@@ -548,7 +573,7 @@ fn serve(o: &Opts) -> Result<(), String> {
     let base = format!("http://127.0.0.1:{}/", o.port);
     println!("serving {} at {base}", o.mirror.display());
     println!("feed:    {base}release_info.json");
-    println!("launch:  ARTCRAFT_LAUNCHER_DOWNLOAD_BASE={base} cargo run -p artcraft-launcher --features local-mirror");
+    println!("launch:  CRAFT_UNOFFICIAL_LAUNCHER_DOWNLOAD_BASE={base} cargo run -p artcraft-launcher --features local-mirror");
     if let Some(every) = o.sync_every {
         // Syncs run one after another on their own thread, so a long build never holds up a
         // download; a version only joins the feed once its build is complete.
@@ -569,7 +594,7 @@ fn serve(o: &Opts) -> Result<(), String> {
     const MAX_HANDLERS: usize = 64;
     let active = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     for stream in listener.incoming().flatten() {
-        let (mirror, base) = (o.mirror.clone(), base.clone());
+        let (mirror, base, apps) = (o.mirror.clone(), base.clone(), o.apps.clone());
         if active.fetch_add(1, std::sync::atomic::Ordering::SeqCst) >= MAX_HANDLERS {
             active.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
             let mut out = stream;
@@ -578,7 +603,7 @@ fn serve(o: &Opts) -> Result<(), String> {
         }
         let worker_active = active.clone();
         let spawned = std::thread::Builder::new().spawn(move || {
-            if let Err(e) = handle(stream, &mirror, &base) {
+            if let Err(e) = handle(stream, &mirror, &base, &apps) {
                 eprintln!("  {e}");
             }
             worker_active.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
@@ -653,7 +678,7 @@ fn read_line_bounded(stream: &mut TcpStream, deadline: std::time::Instant, total
     String::from_utf8(line).map_err(|_| "request header contains invalid UTF-8".into())
 }
 
-fn handle(mut stream: TcpStream, mirror: &Path, base: &str) -> Result<(), String> {
+fn handle(mut stream: TcpStream, mirror: &Path, base: &str, apps: &[App]) -> Result<(), String> {
     let io = |e: std::io::Error| e.to_string();
     // A single wall-clock deadline across the request line and every header: an idle or trickling
     // client must not be able to hold a handler thread open indefinitely (CWE-770, CWE-400, F-019).
@@ -686,7 +711,7 @@ fn handle(mut stream: TcpStream, mirror: &Path, base: &str) -> Result<(), String
     // Sanitize client-controlled method and path to prevent terminal escape injection (CWE-117, F-020, F-021).
     eprintln!("{} /{}", sanitize_for_terminal(method), sanitize_for_terminal(path));
     if path == "release_info.json" {
-        return respond(&mut out, "200 OK", "application/json", feed(mirror, base).as_bytes(), head);
+        return respond(&mut out, "200 OK", "application/json", feed(mirror, base, apps).as_bytes(), head);
     }
     // Only <app>/<version>/<file>, and only plain names: nothing outside the mirror.
     let segments: Vec<&str> = path.split('/').collect();
@@ -785,20 +810,21 @@ mod tests {
     #[test]
     fn writes_a_feed_the_launcher_reads() {
         let mirror = std::env::temp_dir().join(format!("xtask-local-{}", std::process::id()));
-        let dir = mirror.join("photocraft").join("0.6.0");
+        let dir = mirror.join("examplecraft").join("0.6.0");
         std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("photocraft-0.6.0-macos-aarch64.dmg"), b"dmg").unwrap();
-        std::fs::write(dir.join(SUMS), format!("{}  photocraft-0.6.0-macos-aarch64.dmg\n", "ab".repeat(32))).unwrap();
+        std::fs::write(dir.join("examplecraft-0.6.0-macos-aarch64.dmg"), b"dmg").unwrap();
+        std::fs::write(dir.join(SUMS), format!("{}  examplecraft-0.6.0-macos-aarch64.dmg\n", "ab".repeat(32))).unwrap();
         std::fs::write(dir.join(NOTES), "Built \"locally\".\n").unwrap();
         // Unfinished builds are invisible.
-        std::fs::create_dir_all(mirror.join("photocraft").join("0.7.0")).unwrap();
+        std::fs::create_dir_all(mirror.join("examplecraft").join("0.7.0")).unwrap();
         std::fs::write(dir.join(COMPLETE), "").unwrap();
-        let json = feed(&mirror, "http://127.0.0.1:8787/");
+        let json = feed(&mirror, "http://127.0.0.1:8787/", &[App::new("example-org/ExampleCraft", "ExampleCraft")]);
         let _ = std::fs::remove_dir_all(&mirror);
         assert!(json.contains(r#""tag":"v0.6.0""#), "{json}");
-        assert!(json.contains(r#""download_url":"http://127.0.0.1:8787/photocraft/0.6.0/photocraft-0.6.0-macos-aarch64.dmg""#));
+        assert!(json.contains(r#""download_url":"http://127.0.0.1:8787/examplecraft/0.6.0/examplecraft-0.6.0-macos-aarch64.dmg""#));
         assert!(json.contains(r#""size_bytes":3"#) && json.contains(&"ab".repeat(32)));
         assert!(json.contains(r#"Built \"locally\".\n"#));
+        assert!(json.contains(r#""repo":"example-org/ExampleCraft""#), "{json}");
         assert!(!json.contains("0.7.0"));
     }
 
@@ -815,6 +841,22 @@ mod tests {
     }
 
     #[test]
+    fn apps_come_from_the_index_or_the_command_line() {
+        let index = vec![App::new("example-org/ExampleCraft", "ExampleCraft"), App::new("someone/notecraft", "NoteCraft")];
+        assert_eq!(index[0].id, "examplecraft");
+        let chosen = chosen_apps(&["NoteCraft".into(), "other/thingcraft".into()], &index).unwrap();
+        assert_eq!(chosen[0], index[1]);
+        assert_eq!(chosen[1], App { id: "thingcraft".into(), name: "thingcraft".into(), repo: "other/thingcraft".into() });
+        assert!(chosen_apps(&["nonesuch".into()], &index).unwrap_err().contains("examplecraft, notecraft"));
+        // The repo's own index parses and names no app twice.
+        let apps = index_apps().unwrap();
+        let mut ids: Vec<&str> = apps.iter().map(|a| a.id.as_str()).collect();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), apps.len());
+    }
+
+    #[test]
     fn intervals() {
         assert_eq!(parse_interval("30m"), Ok(1800));
         assert_eq!(parse_interval("1h"), Ok(3600));
@@ -828,7 +870,7 @@ mod tests {
 
     #[test]
     fn only_plain_names_are_served() {
-        assert!(safe_name("photocraft-0.6.0-macos-universal.dmg"));
+        assert!(safe_name("examplecraft-0.6.0-macos-universal.dmg"));
         for bad in ["", ".", "..", "a/b", "a\\b", "a%2e"] {
             assert!(!safe_name(bad), "{bad}");
         }

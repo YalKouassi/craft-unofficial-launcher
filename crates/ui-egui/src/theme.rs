@@ -1,4 +1,4 @@
-//! Colours, type and shapes, matching getartcraft.com: hard edges, hairline rules, Archivo
+//! Colours, type and shapes, in upstream's design language: hard edges, hairline rules, Archivo
 //! display type, Inter body text and Geist Mono labels. Widgets read [`Tokens::get`]; nothing
 //! hard-codes a colour.
 
@@ -91,7 +91,7 @@ impl Tokens {
         accent_ink: hex(0x74aaff),
         invert_bg: hex(0xffffff),
         invert_fg: hex(0x0b0b0c),
-        // A green and LightCraft's amber from the site's app inks, so status colours come from its palette.
+        // A green and an amber from upstream's app inks, so status colours come from one palette.
         good: hex(0x3fd6b8),
         warn: hex(0xffc14d),
         bad: hex(0xff6259),
@@ -479,7 +479,7 @@ mod tests {
         use egui::{FontFamily, FontId};
         const DYNAMIC_TEXT: &str = concat!(
             "What's Changed: Faster exports 🚀 and fewer bugs 🐛 — New templates 🎨, ",
-            "warnings ⚠ and a celebration 🎉 — ArtCraft news: ✨ ✅ ❌ 💡 🔒"
+            "warnings ⚠ and a celebration 🎉 — app news: ✨ ✅ ❌ 💡 🔒"
         );
         let fonts = font_definitions(None);
         assert_eq!(

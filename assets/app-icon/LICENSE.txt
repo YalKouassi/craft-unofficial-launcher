@@ -1,8 +1,7 @@
-ArtCraft Launcher app icon (every file in this directory)
+Craft Unofficial Launcher app icon (every file in this directory)
 
-These files are the ArtCraft "A" mark (docs/brand/artcraft-mark-black.svg), rendered unmodified by
-packaging/icons.sh. The mark is a trademark of the ArtCraft Team. It is NOT open source and is NOT
-covered by ArtCraft Launcher's MIT or Apache-2.0 license.
-
-Its terms are in docs/brand/LICENSE-brand.txt. In short: it may be used only unmodified, only as
-part of this repository and ArtCraft Launcher, and forks and modified versions must remove it.
+Original work by the Craft Unofficial Launcher contributors. Licensed under the MIT License or the
+Apache License, Version 2.0, at your option, like the rest of this repository (LICENSE-MIT,
+LICENSE-APACHE at the repository root). The sources are craft-unofficial-launcher.svg and
+tray/craft-unofficial-launcher-tray-black.svg; every other file is rendered from them by
+packaging/icons.sh.

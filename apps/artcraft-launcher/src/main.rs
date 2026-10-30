@@ -1,4 +1,4 @@
-//! ArtCraft Launcher: install, update and open the Craft App Suite.
+//! Craft Unofficial Launcher: install, update and open unofficial Craft-style apps.
 //!
 //! The window can close to the tray (menu bar) and keep checking for updates, or quit entirely.
 
@@ -28,7 +28,7 @@ use artcraft_launcher_ui_egui::theme::Tokens;
 use artcraft_launcher_ui_egui::{Host, LauncherUi, Settings, TitleBar};
 use eframe::wgpu::rwh::{HasDisplayHandle, RawDisplayHandle};
 
-const APP_ID: &str = "ai.storyteller.artcraft-launcher";
+const APP_ID: &str = "io.github.yalkouassi.craft-unofficial-launcher";
 const SETTINGS_KEY: &str = "settings";
 
 type Wake = Arc<OnceLock<Box<dyn Fn() + Send + Sync>>>;
@@ -44,8 +44,6 @@ fn main() -> ExitCode {
     }
     // Detect system language in the background so the first frame can use it.
     artcraft_launcher_ui_egui::i18n::detect_system_lang_in_background();
-    // Detect Discord protocol handler in the background without blocking startup.
-    artcraft_launcher_native::process::ensure_discord_detection_started();
     // `std::env::args` panics on an argument that is not UTF-8, and the launcher is started with
     // whatever the desktop hands it: a login entry, a file manager, a terminal in a Latin-1
     // locale. It only ever looks for the two flags below, so an argument it cannot read is one it
@@ -62,7 +60,7 @@ fn main() -> ExitCode {
         })
         .collect();
     if args.iter().any(|a| a == "--version" || a == "-V") {
-        println!("artcraft-launcher {}", env!("CARGO_PKG_VERSION"));
+        println!("craft-unofficial-launcher {}", env!("CARGO_PKG_VERSION"));
         return ExitCode::SUCCESS;
     }
     let mut hidden = args.iter().any(|a| a == login::HIDDEN_FLAG);
@@ -79,7 +77,7 @@ fn main() -> ExitCode {
     if let Some(logs) = logs {
         match artcraft_launcher_native::paths::Paths::new() {
             Ok(paths) => match logs.attach_dir(&paths.logs()) {
-                Ok(path) => log::info!("ArtCraft Launcher {}, log file {}", env!("CARGO_PKG_VERSION"), path.display()),
+                Ok(path) => log::info!("Craft Unofficial Launcher {}, log file {}", env!("CARGO_PKG_VERSION"), path.display()),
                 Err(e) => {
                     logs.no_file();
                     log::warn!("no log file: {e}");
@@ -130,7 +128,7 @@ fn main() -> ExitCode {
             let result = {
                 let (waker, launcher) = (waker.clone(), &mut launcher);
                 eframe::run_native(
-                    "ArtCraft Launcher",
+                    "Craft Unofficial Launcher",
                     native_options(hidden),
                     Box::new(move |cc| {
                         launcher.open(cc, &waker);
@@ -162,10 +160,12 @@ fn main() -> ExitCode {
 /// deliberate bundled faces stay in charge, and wgpu limits are clamped to the adapter so a
 /// short adapter cannot fail device creation.
 fn native_options(hidden: bool) -> eframe::NativeOptions {
-    let icon =
-        eframe::icon_data::from_png_bytes(include_bytes!("../../../assets/app-icon/hicolor/256x256/apps/ai.storyteller.artcraft-launcher.png")).ok();
+    let icon = eframe::icon_data::from_png_bytes(include_bytes!(
+        "../../../assets/app-icon/hicolor/256x256/apps/io.github.yalkouassi.craft-unofficial-launcher.png"
+    ))
+    .ok();
     let mut viewport = egui::ViewportBuilder::default()
-        .with_title("ArtCraft Launcher")
+        .with_title("Craft Unofficial Launcher")
         .with_app_id(APP_ID)
         .with_inner_size([1120.0, 760.0])
         .with_min_inner_size([720.0, 500.0])
@@ -341,8 +341,7 @@ fn wgpu_options() -> eframe::WgpuConfiguration {
 /// on Big Sur and Monterey (Iris and Iris Pro among them), Metal's compiler fails on them with an
 /// internal error, the device is lost and the launcher exits at startup (#344). Intel Macs skip
 /// them, and other platforms keep wgpu's default. The launcher issues no indirect draws or
-/// dispatches. `WGPU_VALIDATION_INDIRECT_CALL=1` still turns them back on. PhotoCraft does the same
-/// (storytold/photocraft#3171).
+/// dispatches. `WGPU_VALIDATION_INDIRECT_CALL=1` still turns them back on.
 #[cfg(any(target_os = "macos", test))]
 fn skips_indirect_validation(os: &str, intel: bool) -> bool {
     os == "macos" && intel
@@ -455,7 +454,7 @@ fn tray_step(requests: &[Request]) -> TrayStep {
 }
 
 /// The nearest folder at or above `initial` that exists, so Browse starts near a default that is
-/// often created only by the first install (`Program Files\ArtCraft`).
+/// often created only by the first install.
 fn nearest_existing_folder(initial: Option<&str>) -> Option<std::path::PathBuf> {
     let folder = initial.map(std::path::PathBuf::from)?;
     folder.ancestors().find(|candidate| candidate.is_dir()).map(|folder| folder.to_path_buf())
@@ -506,7 +505,7 @@ impl Host for DesktopHost {
             #[cfg(target_os = "macos")]
             claim_notification_identity();
             let mut n = notify_rust::Notification::new();
-            n.summary(&title).body(&body).appname("ArtCraft Launcher");
+            n.summary(&title).body(&body).appname("Craft Unofficial Launcher");
             #[cfg(windows)]
             n.app_id(APP_ID);
             #[cfg(all(unix, not(target_os = "macos")))]
@@ -554,10 +553,6 @@ impl Host for DesktopHost {
 
     fn reduce_motion(&self) -> bool {
         motion::reduced()
-    }
-
-    fn discord_url(&self) -> &'static str {
-        artcraft_launcher_native::process::discord_url()
     }
 
     fn quit(&mut self) {
@@ -672,9 +667,7 @@ impl Launcher {
                 tray::TrayAction::Check => self.ui.check_now(),
                 // Straight to the browser: works while the window is hidden in the tray.
                 tray::TrayAction::Open(url) => {
-                    if url == artcraft_launcher_core::catalog::DISCORD_APP_URL {
-                        artcraft_launcher_native::process::open_url_with_fallback(url, artcraft_launcher_core::catalog::DISCORD_URL);
-                    } else if let Err(e) = artcraft_launcher_native::process::open(std::ffi::OsStr::new(url)) {
+                    if let Err(e) = artcraft_launcher_native::process::open(std::ffi::OsStr::new(url)) {
                         log::warn!("couldn't open {url}: {e}");
                     }
                 }
@@ -842,19 +835,6 @@ impl eframe::App for Shell<'_> {
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.launcher.ui.ui(ui, &mut self.launcher.host);
-        ui.ctx().output_mut(|o| {
-            o.commands.retain(|cmd| {
-                // The Discord deep link goes to the system opener, falling back to the web invite;
-                // egui's own link handling only opens web pages.
-                if let egui::OutputCommand::OpenUrl(open_url) = cmd
-                    && open_url.url == artcraft_launcher_core::catalog::DISCORD_APP_URL
-                {
-                    artcraft_launcher_native::process::open_url_with_fallback(&open_url.url, artcraft_launcher_core::catalog::DISCORD_URL);
-                    return false;
-                }
-                true
-            });
-        });
     }
 
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
@@ -940,9 +920,9 @@ mod tests {
     fn browse_starts_at_the_nearest_folder_that_exists() {
         let existing = std::env::temp_dir();
         assert_eq!(nearest_existing_folder(None), None);
-        // A default like `Program Files\ArtCraft` is often created only by the first install:
+        // A default like `Program Files\Example Org` is often created only by the first install:
         // Browse then starts one level up, where the eye can find it again.
-        let missing = existing.join("artcraft-launcher-does-not-exist-yet");
+        let missing = existing.join("craft-unofficial-launcher-does-not-exist-yet");
         assert_eq!(nearest_existing_folder(missing.to_str()), Some(existing.clone()));
         assert_eq!(nearest_existing_folder(existing.to_str()), Some(existing));
     }
@@ -1089,7 +1069,7 @@ mod tests {
 
     #[test]
     fn with_no_window_changed_settings_are_saved_before_quitting() {
-        let dir = std::env::temp_dir().join(format!("artcraft-launcher-tray-save-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("craft-unofficial-launcher-tray-save-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let path = dir.join("app.ron");
         let seen = Arc::new(Seen { clock: AtomicI64::new(NOW), ..Seen::default() });
@@ -1111,7 +1091,7 @@ mod tests {
 
     #[test]
     fn with_no_window_unchanged_settings_are_not_written() {
-        let dir = std::env::temp_dir().join(format!("artcraft-launcher-tray-nosave-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("craft-unofficial-launcher-tray-nosave-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let (_, show_requests) = channel();
         let mut launcher = Launcher::new(Box::new(Quiet(Arc::new(Seen::default()))), show_requests, Some(dir.join("app.ron")));

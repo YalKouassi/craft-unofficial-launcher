@@ -28,9 +28,9 @@ jobs:
     # Immutable supporting workflow revision until the new install contract lands upstream.
     uses: storytold/craft-common-actions/.github/workflows/windows-arm64.yml@8bb4e5ab95443171104ad88113fe1ef9b0e5ce3f
     with:
-      app-name: craft-launcher
-      app-dir: ArtCraft Launcher
-      install-relative-path: Programs/ArtCraft/Launcher
+      app-name: craft-unofficial-launcher
+      app-dir: Craft Unofficial Launcher
+      install-relative-path: Programs/Craft Unofficial Launcher
       install-scope: perUser
       is-per-user: true
-      main-binary: artcraft-launcher.exe
+      main-binary: craft-unofficial-launcher.exe

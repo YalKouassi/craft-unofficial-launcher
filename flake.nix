@@ -1,5 +1,5 @@
 {
-  description = "Experimental Nix flake for ArtCraft Launcher";
+  description = "Experimental Nix flake for Craft Unofficial Launcher";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -58,7 +58,9 @@
         };
 
         packages.default = pkgs.rustPlatform.buildRustPackage {
-          pname = "artcraft-launcher";
+          pname = "craft-unofficial-launcher";
+          # Upstream's package name; its binary is craft-unofficial-launcher.
+          cargoBuildFlags = [ "-p" "artcraft-launcher" ];
           version = version;
           src = ./.;
           cargoLock = {
@@ -92,7 +94,7 @@
 
         apps.default = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/artcraft-launcher";
+          program = "${self.packages.${system}.default}/bin/craft-unofficial-launcher";
         };
       });
 }

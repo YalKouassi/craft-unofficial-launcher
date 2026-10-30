@@ -133,6 +133,7 @@ fn complete_catalogs_cover_every_ui_literal() {
         include_str!("../settings_dialog.rs"),
         include_str!("../views.rs"),
         include_str!("../widgets.rs"),
+        include_str!("../unofficial.rs"),
         // The desktop shell's tray menu and tooltip.
         include_str!("../../../../apps/artcraft-launcher/src/tray.rs"),
     ];
@@ -148,10 +149,12 @@ fn complete_catalogs_cover_every_ui_literal() {
                 keys.insert(&source[start..start + len]);
             }
         }
-        for (i, _) in source.match_indices("tl!(\"") {
-            let start = i + 5;
-            if let Some(len) = source[start..].find('"') {
-                keys.insert(&source[start..start + len]);
+        // `tl!("…")`, also with the literal on the next line.
+        for (i, call) in source.match_indices("tl!(") {
+            let rest = &source[i + call.len()..];
+            let Some(literal) = rest.trim_start().strip_prefix('"') else { continue };
+            if let Some(len) = literal.find('"') {
+                keys.insert(&literal[..len]);
             }
         }
     }
@@ -179,18 +182,9 @@ fn complete_catalogs_cover_every_ui_literal() {
 }
 
 #[test]
-fn complete_catalogs_translate_every_tagline() {
-    for lang in Lang::all().filter(|l| l.complete_menus()) {
-        for app in &artcraft_launcher_core::SUITE {
-            assert_ne!(super::tr_ctx(lang, app.id, app.tagline), app.tagline, "{}: {}", lang.code(), app.id);
-        }
-    }
-}
-
-#[test]
 fn product_names_stay_in_english() {
     for lang in Lang::all() {
-        for name in ["ArtCraft Launcher", "Craft App Suite", "Launcher"] {
+        for name in ["Craft Unofficial Launcher", "Launcher"] {
             assert_eq!(tr(lang, name), name, "{}", lang.code());
         }
     }

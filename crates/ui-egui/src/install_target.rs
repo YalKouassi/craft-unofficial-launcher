@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn a_fresh_install_tries_the_preferred_format_then_the_rest() {
-        let app = &artcraft_launcher_core::SUITE[0];
+        let app = &artcraft_launcher_core::apps()[0];
         assert_eq!(fresh_kinds(app, Os::Windows, &[]), [PackageKind::Msi, PackageKind::PortableZip]);
         assert_eq!(fresh_kinds(app, Os::Windows, &[PackageKind::PortableZip]), [PackageKind::PortableZip, PackageKind::Msi]);
         // A preference this platform cannot install is skipped, as the backend does.

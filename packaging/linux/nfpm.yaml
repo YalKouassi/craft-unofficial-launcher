@@ -3,7 +3,7 @@
 # exports VERSION, NFPM_ARCH and GLIBC_FLOOR (the build runner's glibc baseline).
 #
 #   nfpm package -f packaging/linux/nfpm.yaml -p deb -t dist/release/
-name: artcraft-launcher
+name: craft-unofficial-launcher
 arch: ${NFPM_ARCH}
 platform: linux
 version: ${VERSION}
@@ -12,20 +12,20 @@ version_schema: semver
 release: 1
 section: utils
 priority: optional
-maintainer: ${ARTCRAFT_LAUNCHER_MAINTAINER}
-vendor: Learning Machines LLC
-homepage: https://github.com/storytold/craft-launcher
+maintainer: ${CRAFT_UNOFFICIAL_LAUNCHER_MAINTAINER}
+vendor: Craft Unofficial Launcher contributors
+homepage: https://github.com/YalKouassi/craft-unofficial-launcher
 license: MIT OR Apache-2.0
 description: |-
-  Install, update and launch the Craft App Suite.
-  ArtCraft Launcher lists PhotoCraft, LightCraft, FilmCraft, DesignCraft,
-  VectorCraft, PdfCraft, EffectCraft, WordCraft, DeckCraft, GridCraft, CADCraft,
-  SoundCraft and FigCraft, installs the right build for this computer and keeps
-  them up to date from GitHub releases. It can live in the system tray.
+  Install, update and launch unofficial Craft-style apps.
+  Craft Unofficial Launcher lists the apps you add by their GitHub repository, checks
+  each one's craft-app.json, installs the right build for this computer and keeps
+  them up to date from GitHub releases. It can live in the system tray. It is not an
+  ArtCraft product and never lists official ArtCraft apps.
 
 # The binary links only glibc and libgcc_s directly. Windowing (X11/Wayland, xkbcommon) and the
 # GPU (Vulkan, EGL/GL) are loaded at runtime with dlopen, so they aren't ELF NEEDED entries and
-# the package tools can't find them: list them here (the same set as the other Craft apps).
+# the package tools can't find them: list them here (the same set as other egui/wgpu apps).
 # The tray (StatusNotifierItem) and notifications talk to the session bus in pure Rust (zbus),
 # so there is no libdbus, GTK or appindicator dependency; a desktop without a
 # StatusNotifierWatcher (plain GNOME needs the AppIndicator extension) simply shows no tray icon.
@@ -67,8 +67,8 @@ overrides:
       - xdg-desktop-portal
 
 contents:
-  - src: ${STAGE}/usr/bin/artcraft-launcher
-    dst: /usr/bin/artcraft-launcher
+  - src: ${STAGE}/usr/bin/craft-unofficial-launcher
+    dst: /usr/bin/craft-unofficial-launcher
     file_info: { mode: 0755 }
   - src: ${STAGE}/usr/share/
     dst: /usr/share/

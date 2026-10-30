@@ -7,7 +7,7 @@ use artcraft_launcher_core::protocol::{
 };
 use artcraft_launcher_core::release::Release;
 use artcraft_launcher_core::status::AppStatus;
-use artcraft_launcher_core::{Arch, PackageKind, Platform, SUITE};
+use artcraft_launcher_core::{Arch, PackageKind, Platform};
 
 use crate::i18n::set_current;
 use crate::model::AppEntry;
@@ -68,10 +68,6 @@ pub trait Host {
     fn default_install_folder(&mut self, _kind: PackageKind, _arch: Option<Arch>) -> Option<String> {
         None
     }
-    /// The URL to open when Discord is clicked. Defaults to the web link.
-    fn discord_url(&self) -> &'static str {
-        artcraft_launcher_core::catalog::DISCORD_URL
-    }
     /// Quit the launcher for real (not just hide to the tray).
     fn quit(&mut self) {}
 }
@@ -111,11 +107,19 @@ pub(crate) enum UiAction {
 pub(crate) enum Dialog {
     Notes(String),
     ConfirmUninstall(String),
-    Install { app: String, folder: String },
-    Replace { app: String, path: String },
+    Install {
+        app: String,
+        folder: String,
+    },
+    Replace {
+        app: String,
+        path: String,
+    },
     Settings,
     LauncherUpdate(artcraft_launcher_core::Release),
     Versions(String),
+    /// Add an unofficial app by its repo, or from the community index.
+    AddApp,
 }
 
 impl Dialog {
@@ -130,6 +134,7 @@ impl Dialog {
             Dialog::Settings => ("settings", ""),
             Dialog::LauncherUpdate(r) => ("launcher-update", &r.tag),
             Dialog::Versions(id) => ("versions", id),
+            Dialog::AddApp => ("add-app", ""),
         }
     }
 }
@@ -153,7 +158,7 @@ pub struct LauncherUi {
     pub(crate) launcher_job: Option<artcraft_launcher_core::protocol::JobPhase>,
     /// The new launcher is in place: quit so it can start.
     restart_requested: bool,
-    /// News from ArtCraft's release feed, shown inline until dismissed.
+    /// Notices (app renames and other news), shown inline until dismissed.
     pub(crate) announcements: Vec<artcraft_launcher_core::feed::Notice>,
     /// Alerts from the feed, shown as popups until acknowledged.
     pub(crate) alerts: Vec<artcraft_launcher_core::feed::Notice>,
@@ -194,8 +199,6 @@ pub struct LauncherUi {
     /// Versions of apps or the launcher already queued for auto-update during this session,
     /// preventing repeated install loops if an update fails or is in progress.
     pub(crate) auto_update_attempted: std::collections::BTreeSet<(String, String)>,
-    /// The URL or deep link to open when Discord is clicked.
-    pub(crate) discord_url: &'static str,
     /// UI actions drawn in this pass, not sent yet.
     pending: Vec<UiAction>,
     /// The `egui::Context::cumulative_frame_nr` those actions belong to.
@@ -205,6 +208,8 @@ pub struct LauncherUi {
     /// Toasts created from logic (which may run with an old input time) or the UI. Their expiry is
     /// fixed when the next `ui` pass actually shows them.
     pending_toasts: Vec<(String, bool)>,
+    /// The Add app dialog and the catalog's refusals.
+    pub(crate) add: crate::unofficial::AddState,
 }
 
 /// The language to draw in: the preference, or English where it needs a CJK font the system
@@ -248,7 +253,7 @@ impl LauncherUi {
         Self {
             backend,
             settings,
-            entries: SUITE.iter().map(AppEntry::new).collect(),
+            entries: artcraft_launcher_core::apps().iter().map(AppEntry::new).collect(),
             caps,
             platform,
             checking: false,
@@ -282,11 +287,11 @@ impl LauncherUi {
             last_detect: 0,
             was_focused: true,
             auto_update_attempted: std::collections::BTreeSet::new(),
-            discord_url: artcraft_launcher_core::catalog::DISCORD_URL,
             pending: Vec::new(),
             frame: None,
             flushed: Vec::new(),
             pending_toasts: Vec::new(),
+            add: crate::unofficial::AddState::default(),
         }
     }
 
@@ -532,6 +537,14 @@ impl LauncherUi {
     /// Returns whether app state changed.
     fn handle(&mut self, event: Event) -> bool {
         match event {
+            Event::CatalogChanged { problems } => {
+                self.on_catalog_changed(problems);
+                true
+            }
+            Event::AddFinished { repo, result } => {
+                self.on_add_finished(repo, result);
+                true
+            }
             Event::Latest { app, latest, from } => {
                 self.on_latest(app, latest, from);
                 true
@@ -683,7 +696,7 @@ impl LauncherUi {
         if self.settings.notify {
             let (title, body) = match fresh.as_slice() {
                 [(_, name, v)] => {
-                    let body: String = tl!("Open ArtCraft Launcher to update.").to_string();
+                    let body: String = tl!("Open Craft Unofficial Launcher to update.").to_string();
                     (crate::i18n::fmt(tl!("{name} {v} is available"), &[("name", name), ("v", v)]), body)
                 }
                 many => {
@@ -707,7 +720,7 @@ impl LauncherUi {
         }
         self.settings.tray_hint_shown = true;
         host.notify(
-            tl!("ArtCraft Launcher is still running"),
+            tl!("Craft Unofficial Launcher is still running"),
             tl!("It's in the tray: open it or quit it from the tray icon, or turn this off in the settings."),
         );
     }
@@ -808,7 +821,6 @@ impl LauncherUi {
             motion::apply(&ctx, self.reduce_motion);
             self.applied_motion = Some(self.reduce_motion);
         }
-        self.discord_url = host.discord_url();
         let tokens = Tokens::get(&ctx);
         if self.entries.iter().any(|e| e.job.is_some()) || self.checking {
             ctx.request_repaint_after(Duration::from_millis(50));
@@ -837,7 +849,9 @@ impl LauncherUi {
                     ViewMode::Table => egui::ScrollArea::both(),
                 };
                 scroll.auto_shrink(false).show(ui, |ui| {
-                    if ids.is_empty() {
+                    if self.entries.is_empty() {
+                        self.empty_catalog(ui);
+                    } else if ids.is_empty() {
                         ui.add_space(40.0);
                         ui.vertical_centered(|ui| {
                             crate::widgets::hud(ui, tl!("No apps match"), tokens.muted);
@@ -933,8 +947,9 @@ impl LauncherUi {
         self.entry(id).is_some_and(|e| e.status(self.platform, self.caps.manage_apps).is_installed())
     }
 
-    /// "ArtCraft API", "GitHub" or "ArtCraft API and GitHub": the services behind the releases on
-    /// screen right now. `None` until something has loaded.
+    /// "release feed", "GitHub" or "release feed and GitHub": the services behind the releases on
+    /// screen right now (a feed only from a developer's loopback mirror). `None` until something
+    /// has loaded.
     pub(crate) fn sources_label(&self) -> Option<String> {
         use artcraft_launcher_core::protocol::Origin;
         let mut api = false;
@@ -949,8 +964,8 @@ impl LauncherUi {
             }
         }
         match (api, github) {
-            (true, true) => Some(crate::i18n::fmt(tl!("{a} and {b}"), &[("a", Origin::ArtCraftApi.label()), ("b", Origin::GitHub.label())])),
-            (true, false) => Some(Origin::ArtCraftApi.label().to_string()),
+            (true, true) => Some(crate::i18n::fmt(tl!("{a} and {b}"), &[("a", tl!("release feed")), ("b", Origin::GitHub.label())])),
+            (true, false) => Some(tl!("release feed").to_string()),
             (false, true) => Some(Origin::GitHub.label().to_string()),
             (false, false) => None,
         }

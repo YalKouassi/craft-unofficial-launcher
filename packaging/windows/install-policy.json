@@ -1,14 +1,14 @@
 {
-  "id": "artcraft-launcher",
-  "name": "ArtCraft Launcher",
+  "id": "craft-unofficial-launcher",
+  "name": "Craft Unofficial Launcher",
   "mode": "perUser",
-  "upgradeCode": "1AC08DBF-D4CF-4BA4-A81E-CAA5C1004974",
+  "upgradeCode": "D9786E53-2C49-4B38-9D59-63A402299FBD",
   "sources": [
-    "artcraft-launcher.wxs"
+    "craft-unofficial-launcher.wxs"
   ],
-  "icon": "assets/app-icon/artcraft-launcher.ico",
+  "icon": "assets/app-icon/craft-unofficial-launcher.ico",
   "localization": [
-    "artcraft-launcher.en-us.wxl"
+    "craft-unofficial-launcher.en-us.wxl"
   ],
   "extensions": [
     "UI",
@@ -16,36 +16,36 @@
   ],
   "payloads": [
     "NOTICE",
-    "artcraft-launcher.exe"
+    "craft-unofficial-launcher.exe"
   ],
   "registry": [
     [
       "1",
-      "Software\\Learning Machines LLC\\ArtCraft Launcher",
+      "Software\\Craft Unofficial Launcher contributors\\Craft Unofficial Launcher",
       "InstallDir",
       "[INSTALLFOLDER]"
     ],
     [
       "1",
-      "Software\\Learning Machines LLC\\ArtCraft Launcher",
+      "Software\\Craft Unofficial Launcher contributors\\Craft Unofficial Launcher",
       "DesktopShortcutChoice",
       "[DESKTOPSHORTCUTCHOICE]"
     ],
     [
       "1",
-      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\artcraft-launcher.exe",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\craft-unofficial-launcher.exe",
       "",
-      "[#ArtCraftLauncherExe]"
+      "[#LauncherExe]"
     ],
     [
       "1",
-      "Software\\Learning Machines LLC\\ArtCraft Launcher",
+      "Software\\Craft Unofficial Launcher contributors\\Craft Unofficial Launcher",
       "StartMenuShortcut",
       "#1"
     ],
     [
       "1",
-      "Software\\Learning Machines LLC\\ArtCraft Launcher",
+      "Software\\Craft Unofficial Launcher contributors\\Craft Unofficial Launcher",
       "DesktopShortcut",
       "#1"
     ]

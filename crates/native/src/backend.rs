@@ -13,7 +13,7 @@ use artcraft_launcher_core::protocol::{
     Source, VersionTrack,
 };
 use artcraft_launcher_core::release::{Asset, Release};
-use artcraft_launcher_core::{CraftApp, Installed, PackageKind, SUITE, version};
+use artcraft_launcher_core::{CraftApp, Installed, PackageKind, version};
 
 use crate::feed_throttle::{self, FeedThrottle, Outcome};
 use crate::http::{self, Http, Stop};
@@ -21,6 +21,7 @@ use crate::install::{self, Job};
 use crate::manifest::Manifest;
 use crate::paths::Paths;
 use crate::process;
+use crate::registry::{Fetch, Registry};
 use crate::source::{GitHubSource, ReleaseSource};
 
 /// The longest the launcher's own update waits for other installs to end before it gives up
@@ -37,13 +38,17 @@ const EARLY_GITHUB_EVERY: i64 = 5 * 60;
 /// Tries at the feed per check (after the very first poll). The pause between tries is the
 /// [`FeedThrottle`]'s: seconds during the first load, so a check retries; a minute or more after
 /// that, so a check then tries once and the retries come from the next checks.
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 const FEED_ATTEMPTS: usize = 3;
 /// The longest a check waits on the [`FeedThrottle`] before carrying on without the feed.
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 const MAX_THROTTLE_WAIT: i64 = 10;
 /// After everything has loaded, the feed counts as seriously failed (and GitHub takes over)
 /// only after this many checks in a row without an answer…
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 const SERIOUS_FEED_FAILURES: u32 = 3;
 /// …and this long without a good answer.
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 const SERIOUS_FEED_OUTAGE: i64 = 60 * 60;
 /// Requests in flight at once during a check.
 const WORKERS: usize = 4;
@@ -64,7 +69,7 @@ struct Shared {
     /// A detection pass is running; another request waits for the next one.
     detecting: AtomicBool,
     last_check: Mutex<Option<i64>>,
-    /// The newer ArtCraft Launcher release, once a check has found one.
+    /// The newer Craft Unofficial Launcher release, once a check has found one.
     launcher_release: Mutex<Option<Release>>,
     /// How this launcher is installed, when it can replace itself. Worked out on the check thread
     /// just before a newer launcher is announced: finding out can ask the host's Flatpak, which
@@ -77,13 +82,18 @@ struct Shared {
     /// Every app has had an answer at least once: from then on GitHub is asked sparingly.
     loaded: AtomicBool,
     /// Checks in a row in which the feed didn't answer.
+    #[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
     feed_failures: Mutex<u32>,
     /// When the feed last answered (Unix seconds).
+    #[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
     feed_ok_at: Mutex<Option<i64>>,
-    /// How often ArtCraft's API may be called.
+    /// How often a release feed may be called.
+    #[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
     feed_throttle: Mutex<FeedThrottle>,
     /// Apps whose details pictures are on their way (a second request meanwhile does nothing).
     pictures_busy: Mutex<std::collections::HashSet<&'static str>>,
+    /// The apps the user added. Locked while one is being added or refreshed.
+    registry: Mutex<Registry>,
 }
 
 #[derive(Clone, Copy)]
@@ -139,7 +149,7 @@ impl NativeBackend {
         let waker: Waker = Arc::new(waker);
         let paths = Paths::new().unwrap_or_else(|e| {
             log::error!("{e}; keeping files in the temporary folder");
-            Paths::under(&std::env::temp_dir().join("artcraft-launcher"))
+            Paths::under(&std::env::temp_dir().join("craft-unofficial-launcher"))
         });
         let http = match Http::new() {
             Ok(h) => Some(h),
@@ -170,9 +180,11 @@ impl NativeBackend {
             feed_ok_at: Mutex::new(None),
             feed_throttle: Mutex::new(FeedThrottle::load(&paths.feed_throttle(), crate::now())),
             pictures_busy: Mutex::new(std::collections::HashSet::new()),
+            registry: Mutex::new(Registry::load(&paths.catalog())),
             last_check: Mutex::new(None),
         });
         let backend = Self { shared, paths, http, source, platform: native_platform() };
+        publish_catalog(&backend.shared);
         backend.replay_cache();
         backend.detect_all();
         backend
@@ -182,9 +194,10 @@ impl NativeBackend {
     /// release feed's where they're still fresh, GitHub's otherwise.
     fn replay_cache(&self) {
         let pre = self.options().prereleases;
-        let feed = if pre { None } else { load_feed(&self.paths) };
+        let _ = pre;
+        let feed: Option<Feed> = None;
         let now = crate::now();
-        for app in &SUITE {
+        for app in artcraft_launcher_core::apps() {
             let answer = match feed.as_ref().map(|f| f.answer(app, now)) {
                 Some(FeedAnswer::Fresh(Some(r))) => Some((LatestRelease::Found(r), Origin::ArtCraftApi)),
                 Some(FeedAnswer::Fresh(None)) => Some((LatestRelease::None, Origin::ArtCraftApi)),
@@ -222,7 +235,7 @@ impl NativeBackend {
             http::clean_downloads(&paths.downloads(), Duration::from_secs(30 * 86_400), Duration::from_secs(7 * 86_400));
             let snapshot = crate::detect::Snapshot::take();
             let manifest = shared.manifest.lock().unwrap_or_else(PoisonError::into_inner).clone();
-            for app in &SUITE {
+            for app in artcraft_launcher_core::apps() {
                 let found = crate::detect::detect(app, &manifest, &snapshot);
                 {
                     let mut map = shared.installed.lock().unwrap_or_else(PoisonError::into_inner);
@@ -234,19 +247,19 @@ impl NativeBackend {
                 shared.emit(Event::Detected { app: app.id.to_string(), installed: found });
             }
             // Downloads paused (or cut off by quitting) in an earlier run.
-            for app in &SUITE {
+            for app in artcraft_launcher_core::apps() {
                 report_partial(app, &shared, &paths, platform, &options);
             }
             drop(busy);
         });
     }
 
-    /// Looks up the latest releases: ArtCraft's release feed first (one request for every app),
+    /// Looks up the latest releases: a release feed first (only a developer's loopback mirror here) (one request for every app),
     /// GitHub for anything the feed can't vouch for (apps it doesn't list, entries more than a
     /// day old, or no answer at all), at most once an hour per app unless `force`.
     fn check(&self, force: bool) {
         let (Some(source), Some(http)) = (self.source.clone(), self.http.clone()) else {
-            for app in &SUITE {
+            for app in artcraft_launcher_core::apps() {
                 self.shared.emit(Event::Latest {
                     app: app.id.to_string(),
                     latest: LatestRelease::Failed("secure connections aren't available".into()),
@@ -270,23 +283,35 @@ impl NativeBackend {
         std::thread::spawn(move || {
             let busy = busy;
             shared.emit(Event::CheckStarted);
+            if mirror.is_none() {
+                let fetch = GitHubFetch { source: source.as_ref(), http: &http };
+                let index = load_index(&http);
+                let changed = {
+                    let mut reg = shared.registry.lock().unwrap_or_else(PoisonError::into_inner);
+                    let refreshed = reg.refresh(&fetch);
+                    reg.sync_index(&fetch, &index) || refreshed
+                };
+                if changed {
+                    publish_catalog(&shared);
+                }
+            }
             let (feed, fallback) = check_plan(&http, mirror.as_ref(), pre, &paths, &shared);
             if let Some(f) = &feed {
                 shared.emit(Event::Notices { announcements: f.announcements.clone(), alerts: f.alerts.clone() });
             }
             let now = crate::now();
-            let queue = Mutex::new(SUITE.iter().chain(std::iter::once(&LAUNCHER)).collect::<Vec<&CraftApp>>());
+            let queue = Mutex::new(artcraft_launcher_core::apps().iter().chain(std::iter::once(&LAUNCHER)).collect::<Vec<&CraftApp>>());
             let sources = sweep(&queue, &mirror, feed.as_ref(), fallback, &source, &shared, &paths, &options, force, now);
             source.save();
             {
                 let answered = shared.answered.lock().unwrap_or_else(PoisonError::into_inner);
-                if SUITE.iter().all(|a| answered.contains(a.id)) {
+                if artcraft_launcher_core::apps().iter().all(|a| answered.contains(a.id)) {
                     shared.loaded.store(true, Ordering::SeqCst);
                 }
             }
             // A newer release changes which file an install would use.
             let options = shared.options.lock().unwrap_or_else(PoisonError::into_inner).clone();
-            for app in &SUITE {
+            for app in artcraft_launcher_core::apps() {
                 report_partial(app, &shared, &paths, platform, &options);
             }
             let source_used = source_used_of(&sources);
@@ -315,7 +340,7 @@ impl NativeBackend {
             restarting
         };
         if restarting {
-            let result = Err("ArtCraft Launcher is restarting to finish its update. Try again once it's back.".into());
+            let result = Err("Craft Unofficial Launcher is restarting to finish its update. Try again once it's back.".into());
             self.shared.emit(Event::JobFinished { app: app.id.to_string(), result });
             return;
         }
@@ -399,7 +424,7 @@ impl NativeBackend {
         let (Some(install), Some(platform)) = (self.shared.self_install.get().cloned().flatten(), self.platform) else {
             self.shared.emit(Event::JobFinished {
                 app: id,
-                result: Err("this copy of ArtCraft Launcher can't update itself; download the new version instead".into()),
+                result: Err("this copy of Craft Unofficial Launcher can't update itself; download the new version instead".into()),
             });
             return;
         };
@@ -663,7 +688,7 @@ fn restart_blocked(mut busy: Vec<&str>) -> String {
         _ => (busy.join(", "), "were", "them"),
     };
     format!(
-        "ArtCraft Launcher didn't restart to update: {names} {were} still installing. Answer or close any password prompt, \
+        "Craft Unofficial Launcher didn't restart to update: {names} {were} still installing. Answer or close any password prompt, \
          let {them} finish or cancel {them}, then press Update and restart again."
     )
 }
@@ -724,11 +749,11 @@ fn check_plan(http: &Http, mirror: Option<&String>, pre: bool, paths: &Paths, sh
     if let Some(base) = mirror {
         // A local mirror answers for everything: GitHub is never asked.
         (local_feed(http, base), Fallback { trust_feed: true, github_every: GITHUB_FALLBACK_EVERY })
-    } else if pre {
-        // The feed serves stable releases only; with pre-releases on, GitHub decides.
-        (None, Fallback { trust_feed: false, github_every: EARLY_GITHUB_EVERY })
     } else {
-        feed_and_fallback(http, paths, shared)
+        // ArtCraft's release feed only knows official apps, and this launcher lists none: every
+        // app is answered by its own GitHub repo, and ArtCraft's servers are never contacted.
+        let _ = (pre, paths, shared);
+        (None, Fallback { trust_feed: false, github_every: EARLY_GITHUB_EVERY })
     }
 }
 
@@ -833,6 +858,7 @@ struct Fallback {
 /// - After that: the feed's last answer stands in while it fails, and GitHub is asked only for
 ///   apps the feed doesn't list or hasn't refreshed in a day, or once the feed has seriously
 ///   failed (several checks in a row and an hour without an answer); then hourly per app.
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 fn feed_and_fallback(http: &Http, paths: &Paths, shared: &Shared) -> (Option<Feed>, Fallback) {
     let saved = load_feed(paths);
     let loaded = shared.loaded.load(Ordering::SeqCst);
@@ -862,6 +888,7 @@ fn feed_and_fallback(http: &Http, paths: &Paths, shared: &Shared) -> (Option<Fee
 }
 
 /// The policy in [`feed_and_fallback`], on its own so it can be tested.
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 fn decide_fallback(answered: bool, loaded: bool, first_time: bool, failures: u32, ok_at: Option<i64>, now: i64) -> Fallback {
     let github_every = if loaded { GITHUB_FALLBACK_EVERY } else { EARLY_GITHUB_EVERY };
     let seriously_failed =
@@ -933,6 +960,7 @@ fn feed_repo(feed: Option<&Feed>, app: &CraftApp) -> String {
 }
 
 /// What came of asking the feed during one check.
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 enum FeedFetch {
     Answered(Feed),
     /// Asked, without a good answer.
@@ -941,15 +969,16 @@ enum FeedFetch {
     Held,
 }
 
-/// Asks ArtCraft's release feed up to `attempts` times, as often as `throttle` allows (waiting at
+/// Asks the release feed up to `attempts` times, as often as `throttle` allows (waiting at
 /// most [`MAX_THROTTLE_WAIT`] for it), saving a good answer.
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 fn fetch_feed(http: &Http, paths: &Paths, url: &str, throttle: &Mutex<FeedThrottle>, attempts: usize) -> FeedFetch {
     let mut asked = false;
     for attempt in 0..attempts.max(1) {
         let wait = throttle.lock().unwrap_or_else(PoisonError::into_inner).wait(crate::now());
         if wait > MAX_THROTTLE_WAIT {
             if !asked {
-                log::info!("holding off the ArtCraft API for {wait} s");
+                log::info!("holding off the release feed for {wait} s");
             }
             break;
         }
@@ -980,7 +1009,7 @@ fn fetch_feed(http: &Http, paths: &Paths, url: &str, throttle: &Mutex<FeedThrott
                 }
             },
             Err(e) if e.throttled => {
-                log::warn!("the ArtCraft API asked us to slow down (HTTP 429); holding off");
+                log::warn!("the release feed asked us to slow down (HTTP 429); holding off");
                 Outcome::Throttled { retry_after: e.retry_after }
             }
             Err(e) => {
@@ -996,45 +1025,48 @@ fn fetch_feed(http: &Http, paths: &Paths, url: &str, throttle: &Mutex<FeedThrott
     if asked { FeedFetch::Failed } else { FeedFetch::Held }
 }
 
-/// The feed's address. `ARTCRAFT_LAUNCHER_FEED_URL` points at a staging server or a local copy
+/// The feed's address. `CRAFT_UNOFFICIAL_LAUNCHER_FEED_URL` points at a staging server or a local copy
 /// (only `https://`, or plain `http://` on localhost).
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 fn feed_url() -> String {
-    std::env::var("ARTCRAFT_LAUNCHER_FEED_URL")
+    std::env::var("CRAFT_UNOFFICIAL_LAUNCHER_FEED_URL")
         .ok()
         .filter(|u| feed_url_override_allowed(u, cfg!(feature = "local-mirror")))
         .unwrap_or_else(|| artcraft_launcher_core::feed::FEED_URL.to_string())
 }
 
+#[allow(dead_code)] // upstream's feed path, switched off by `check_plan`; kept (and tested) for upstream merges
 fn feed_url_override_allowed(url: &str, allow_https: bool) -> bool {
     is_loopback(url) || (allow_https && url.starts_with("https://"))
 }
 
 use crate::http::is_loopback;
 
-/// `ARTCRAFT_LAUNCHER_DOWNLOAD_BASE`: a mirror on this machine (`cargo xtask local serve`) that
+/// `CRAFT_UNOFFICIAL_LAUNCHER_DOWNLOAD_BASE`: a mirror on this machine (`cargo xtask local serve`) that
 /// serves `release_info.json` and the builds it lists. While it's set, releases come only from
-/// there (never GitHub or ArtCraft's API), and its download links are trusted. Loopback only, so
+/// there (never GitHub or any other server), and its download links are trusted. Loopback only, so
 /// nothing but the developer's own builds can be installed this way, and only in builds with the
 /// `local-mirror` feature: release builds ignore the variable.
 fn local_mirror() -> Option<String> {
     if !cfg!(feature = "local-mirror") {
         return None;
     }
-    let base = std::env::var("ARTCRAFT_LAUNCHER_DOWNLOAD_BASE").ok()?;
+    let base = std::env::var("CRAFT_UNOFFICIAL_LAUNCHER_DOWNLOAD_BASE").ok()?;
     let base = base.trim();
     if !is_loopback(base) || base.contains(['?', '#', '\\']) {
         log::warn!(
-            "ignoring ARTCRAFT_LAUNCHER_DOWNLOAD_BASE={base}: only http://127.0.0.1:<port>/, http://localhost:<port>/ or http://[::1]:<port>/"
+            "ignoring CRAFT_UNOFFICIAL_LAUNCHER_DOWNLOAD_BASE={base}: only http://127.0.0.1:<port>/, http://localhost:<port>/ or http://[::1]:<port>/"
         );
         return None;
     }
     Some(if base.ends_with('/') { base.to_string() } else { format!("{base}/") })
 }
 
-/// The local mirror's feed: `ARTCRAFT_LAUNCHER_FEED_URL` if set, else `release_info.json` beside
-/// the builds. Asked every check (it's on this machine), and never saved over ArtCraft's.
+/// The local mirror's feed: `CRAFT_UNOFFICIAL_LAUNCHER_FEED_URL` if set, else `release_info.json` beside
+/// the builds. Asked every check (it's on this machine), and never saved.
 fn local_feed(http: &Http, base: &str) -> Option<Feed> {
-    let url = std::env::var("ARTCRAFT_LAUNCHER_FEED_URL").ok().filter(|u| is_loopback(u)).unwrap_or_else(|| format!("{base}release_info.json"));
+    let url =
+        std::env::var("CRAFT_UNOFFICIAL_LAUNCHER_FEED_URL").ok().filter(|u| is_loopback(u)).unwrap_or_else(|| format!("{base}release_info.json"));
     match http.get_feed(&url) {
         Ok(body) => {
             let feed = Feed::parse(&body).map(|f| f.with_mirror(base));
@@ -1123,10 +1155,95 @@ impl NativeBackend {
     }
 }
 
+impl NativeBackend {
+    fn add_app(&self, repo: String) {
+        let (Some(source), Some(http)) = (self.source.clone(), self.http.clone()) else {
+            self.shared.emit(Event::AddFinished { repo, result: Err(vec!["secure connections aren't available".into()]) });
+            return;
+        };
+        let shared = self.shared.clone();
+        std::thread::spawn(move || {
+            let fetch = GitHubFetch { source: source.as_ref(), http: &http };
+            let result = shared.registry.lock().unwrap_or_else(PoisonError::into_inner).add(&fetch, &repo);
+            match &result {
+                Ok(id) => {
+                    log::info!("{repo}: added as {id}");
+                    publish_catalog(&shared);
+                }
+                Err(p) => log::warn!("{repo}: not added: {}", p.join("; ")),
+            }
+            shared.emit(Event::AddFinished { repo, result });
+        });
+    }
+}
+
+/// The app index on this project's `main` branch, read at every check.
+const INDEX_URL: &str = "https://raw.githubusercontent.com/YalKouassi/craft-unofficial-launcher/main/index/apps.json";
+/// The index as of this build, used when the online copy can't be read.
+const BUILTIN_INDEX: &[u8] = include_bytes!("../../../index/apps.json");
+
+/// The app index: the online copy, or the one built in when it can't be read.
+fn load_index(http: &Http) -> Vec<craft_app_descriptor::IndexEntry> {
+    let remote = match http.get_bytes(INDEX_URL, craft_app_descriptor::index::MAX_INDEX_BYTES) {
+        Ok(b) => b,
+        Err(e) => {
+            log::info!("app index unavailable ({e}); using the built-in copy");
+            None
+        }
+    };
+    let parsed = remote.as_deref().and_then(|b| craft_app_descriptor::Index::parse(b).ok()).map_or_else(|| craft_app_descriptor::Index::parse(BUILTIN_INDEX), Ok);
+    match parsed {
+        Ok(i) => i.apps,
+        Err(e) => {
+            log::warn!("the built-in app index is unreadable: {e}");
+            Vec::new()
+        }
+    }
+}
+
+/// Hands the registry's apps to the catalog and tells the UI.
+fn publish_catalog(shared: &Arc<Shared>) {
+    let (entries, problems) = {
+        let reg = shared.registry.lock().unwrap_or_else(PoisonError::into_inner);
+        let problems = reg.apps().iter().filter(|s| !s.problems.is_empty()).map(|s| (s.descriptor.id.clone(), s.problems.clone())).collect();
+        (reg.entries(), problems)
+    };
+    artcraft_launcher_core::catalog::set_apps(entries);
+    shared.emit(Event::CatalogChanged { problems });
+}
+
+/// The registry's view of GitHub: the release source for the latest release, plain HTTP for its files.
+struct GitHubFetch<'a> {
+    source: &'a dyn ReleaseSource,
+    http: &'a Http,
+}
+
+impl Fetch for GitHubFetch<'_> {
+    fn latest(&self, repo: &str) -> Result<Release, String> {
+        match self.source.latest(repo, false).latest {
+            LatestRelease::Found(r) => Ok(r),
+            LatestRelease::None => Err(format!("{repo} has no published release (or isn't a public GitHub repository)")),
+            LatestRelease::Failed(why) => Err(format!("couldn't reach GitHub for {repo} ({why})")),
+        }
+    }
+
+    fn bytes(&self, url: &str, max: usize) -> Result<Option<Vec<u8>>, String> {
+        self.http.get_bytes(url, max)
+    }
+}
+
 impl Backend for NativeBackend {
     fn send(&mut self, command: Command) {
         match command {
             Command::CheckForUpdates { force } => self.check(force),
+            Command::AddApp { repo } => self.add_app(repo),
+            Command::RemoveApp { app } => {
+                let removed = self.shared.registry.lock().unwrap_or_else(PoisonError::into_inner).remove(&app);
+                if removed {
+                    log::info!("{app}: removed from the list");
+                    publish_catalog(&self.shared);
+                }
+            }
             Command::Detect => self.detect_all(),
             Command::ListVersions { app } => {
                 let Some(def) = (if app == LAUNCHER_ID { Some(&LAUNCHER) } else { CraftApp::by_id(&app) }) else { return };
@@ -1193,7 +1310,7 @@ impl Backend for NativeBackend {
                 };
                 // Another package format means another file to download.
                 let options = self.options();
-                for app in &SUITE {
+                for app in artcraft_launcher_core::apps() {
                     report_partial(app, &self.shared, &self.paths, self.platform, &options);
                 }
                 if changed_pre {
@@ -1302,7 +1419,7 @@ mod tests {
         backend.http = Some(Http::new().unwrap());
         {
             let mut options = backend.shared.options.lock().unwrap();
-            options.prereleases = true; // asks the source directly, never ArtCraft's API
+            options.prereleases = true; // asks the source directly, never a release feed
             options.versions.insert(APP.to_string(), VersionTrack::Pinned("v0.5.0".into()));
         }
         backend.send(Command::CheckForUpdates { force: true });
@@ -1382,6 +1499,7 @@ mod tests {
             feed_ok_at: Mutex::new(None),
             feed_throttle: Mutex::new(FeedThrottle::new()),
             pictures_busy: Mutex::new(std::collections::HashSet::new()),
+            registry: Mutex::new(Registry::load(std::path::Path::new("no-such-catalog-folder"))),
         }
     }
 
@@ -1847,7 +1965,7 @@ mod tests {
         let Some(platform) = native_platform() else { return };
         let dir = tempfile::tempdir().unwrap();
         let mut backend = backend(dir.path(), platform, Some(Arc::new(Newer)));
-        // A check needs a client; with pre-releases on it asks only `Newer`, never ArtCraft's API.
+        // A check needs a client; with pre-releases on it asks only `Newer`, never a release feed.
         backend.http = Some(Http::new().unwrap());
         backend.shared.options.lock().unwrap().prereleases = true;
         keep_file(&backend);

@@ -9,7 +9,7 @@ use artcraft_launcher_core::{CraftApp, InstallSource, version};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Package {
     pub manager: InstallSource,
-    /// The package's name (`photocraft-bin`) or Flatpak app id.
+    /// The package's name (`notecraft-bin`) or Flatpak app id.
     pub name: String,
     /// As the package manager reports it (`0.5.0-1`); empty when it doesn't say.
     pub version: String,
@@ -64,9 +64,9 @@ pub fn parse_flatpak_info(text: &str) -> Option<String> {
 }
 
 /// The package names a Craft App may be installed under with `manager`. On Arch the AUR carries
-/// each app three ways: built from source (`photocraft`), the release binary (`photocraft-bin`)
-/// and the latest commit (`photocraft-git`). Debian and RPM packages may use either the short stem
-/// (`photocraft`) or the reverse-DNS bundle id (`ai.storyteller.photocraft`).
+/// each app three ways: built from source (`notecraft`), the release binary (`notecraft-bin`)
+/// and the latest commit (`notecraft-git`). Debian and RPM packages may use either the short stem
+/// (`notecraft`) or the reverse-DNS bundle id (`io.github.someone.notecraft`).
 pub fn candidate_names(app: &CraftApp, manager: InstallSource) -> Vec<String> {
     match manager {
         InstallSource::Flatpak => app.bundle_ids().collect(),

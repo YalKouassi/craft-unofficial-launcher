@@ -1,13 +1,19 @@
 [package]
 name = "artcraft-launcher"
-description = "ArtCraft Launcher: install, update and open the Craft App Suite"
+description = "Craft Unofficial Launcher: install, update and open unofficial Craft-style apps"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
-default-run = "artcraft-launcher"
+default-run = "craft-unofficial-launcher"
 build = "build.rs"
 publish = false
+
+# The package keeps upstream's name (easier merges); the binary is ours, so it never collides with
+# an installed official launcher.
+[[bin]]
+name = "craft-unofficial-launcher"
+path = "src/main.rs"
 
 [lints]
 workspace = true
@@ -65,5 +71,5 @@ tray-icon = { version = "0.26", default-features = false, features = ["ksni"] }
 rfd = { version = "=0.17.2", default-features = false, features = ["xdg-portal", "wayland"] }
 
 [build-dependencies]
-# Icon + VERSIONINFO for artcraft-launcher.exe; build.rs only uses it when targeting Windows.
+# Icon + VERSIONINFO for craft-unofficial-launcher.exe; build.rs only uses it when targeting Windows.
 winresource = "0.1"

@@ -24,7 +24,7 @@ commands:
   icns <out.icns> <in.png>...
                   pack square PNGs (16-1024 px) into a macOS .icns, on any OS
   local sync | serve | status
-                  build the Craft apps from their checkouts and install them from this machine
+                  build the index's apps from their checkouts and install them from this machine
                   (cargo xtask local help)
 ";
 
