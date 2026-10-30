@@ -32,6 +32,7 @@ const fn app(
         bundle: Some(bundle),
         former_bundles: &[],
         site: None,
+        web_demo: None,
         apple_team: Some("DJ6XS33FX8"),
         upstream: None,
         icon_png: Some(ICON),

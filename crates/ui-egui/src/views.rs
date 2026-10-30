@@ -80,6 +80,8 @@ const TAGLINE_SIZE: f32 = 12.0;
 /// The card's top strip: number tab and links.
 const STRIP_H: f32 = 40.0;
 const CARD_PAD: f32 = 20.0;
+/// A third-party site with web builds of many unofficial apps, linked from the header.
+const PLAYGROUND_URL: &str = "https://playground.daijro.dev";
 /// Room macOS's traffic lights take at the left of the header.
 const TRAFFIC_LIGHTS_W: f32 = 72.0;
 
@@ -111,6 +113,10 @@ impl LauncherUi {
                 if widgets::nav_icon(ui, widgets::Glyph::Settings, tl!("Settings"), h, false).clicked() {
                     self.dialog = Some(Dialog::Settings);
                 }
+                // Web builds of many of these apps, to try in a browser before installing.
+                ui.add_space(16.0);
+                widgets::hud_link(ui, tl!("Try playground"), PLAYGROUND_URL);
+                ui.add_space(16.0);
                 // The controls reserve their actual widths before the secondary text gets space.
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                     if ui.available_width() >= 17.0 + widgets::hud_galley(ui, tl!("Unofficial apps"), t.muted).size().x {
@@ -1043,6 +1049,9 @@ impl LauncherUi {
                         ui.close();
                     }
                 };
+                if let Some(demo) = entry.app.web_demo {
+                    link(ui, tl!("Web demo"), demo.to_string());
+                }
                 link(ui, tl!("Website"), entry.app.website());
                 link(ui, tl!("GitHub repository"), entry.app.repo_url());
                 link(ui, tl!("All releases"), entry.app.releases_url());

@@ -54,6 +54,8 @@ pub struct CraftApp {
     pub former_bundles: &'static [&'static str],
     /// Its website. `None`: its repository.
     pub site: Option<&'static str>,
+    /// A page where it can be tried in a web browser. `None`: it names none.
+    pub web_demo: Option<&'static str>,
     /// The Apple Developer ID team that signs its `.app`. `None`: its DMG is never installed, only
     /// opened if it's already there.
     pub apple_team: Option<&'static str>,
@@ -134,6 +136,7 @@ impl CraftApp {
             bundle: Some(leak(&d.bundle_id)),
             former_bundles: leak_all(&d.former_bundles),
             site: d.website.as_deref().map(leak),
+            web_demo: d.web_demo.as_deref().map(leak),
             apple_team: d.apple_team.as_deref().map(leak),
             upstream: d.upstream.as_deref().map(leak),
             icon_png: icon.filter(|i| craft_app_descriptor::check_icon(i).is_ok()).map(|i| &*Box::leak(i.to_vec().into_boxed_slice())),
@@ -206,6 +209,7 @@ pub const LAUNCHER: CraftApp = CraftApp {
     bundle: Some("io.github.yalkouassi.craft-unofficial-launcher"),
     former_bundles: &[],
     site: None,
+    web_demo: None,
     apple_team: None,
     upstream: None,
     icon_png: None,
@@ -238,6 +242,7 @@ mod tests {
             msi_publisher: Some("Someone".into()),
             apple_team: None,
             website: website.map(Into::into),
+            web_demo: None,
             color: "#336699".into(),
             icon: None,
             former_ids: vec![],

@@ -18,6 +18,7 @@ pub fn starter(repo: &str, id: &str, name: &str) -> Result<Descriptor, String> {
         msi_publisher: Some(owner.to_string()),
         apple_team: None,
         website: None,
+        web_demo: None,
         color: "#808080".into(),
         icon: None,
         former_ids: Vec::new(),
@@ -36,7 +37,7 @@ Edit before committing:
   bundle_id      the reverse-DNS id your macOS bundle, Flatpak and .desktop file really use
   msi_publisher  the Publisher your MSI really registers (remove it if you ship no .msi)
   color          your brand colour, #rrggbb
-Optional: website (https://), icon (a .png release asset, at most 512 px and 256 KB),
+Optional: website (https://), web_demo (https://, a page to try it in a browser), icon (a .png release asset, at most 512 px and 256 KB),
 apple_team (your 10-character Developer ID Team ID), upstream (for a bridge repo).
 See docs/craft-app-spec.md.";
 

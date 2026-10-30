@@ -581,9 +581,10 @@ fn step_button(ui: &mut Ui, left: bool, tip: &str, t: &Tokens) -> bool {
 }
 
 /// The app's links as a row of buttons each as wide as its label; the ↗ says each opens the
-/// browser, like the links on the cards.
+/// browser, like the links on the cards. "Web demo" only when the app names one.
 fn link_buttons(ui: &mut Ui, app: &CraftApp) {
-    let links = [(tl!("Website"), app.website()), (tl!("GitHub"), app.repo_url()), (tl!("Releases"), app.releases_url())];
+    let demo = app.web_demo.map(|url| (tl!("Web demo"), url.to_string()));
+    let links = demo.into_iter().chain([(tl!("Website"), app.website()), (tl!("GitHub"), app.repo_url()), (tl!("Releases"), app.releases_url())]);
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 8.0;
         for (label, url) in links {

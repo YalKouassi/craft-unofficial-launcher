@@ -37,6 +37,9 @@ pub struct Descriptor {
     /// Its website (`https://` only).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub website: Option<String>,
+    /// A page where it can be tried in a web browser without installing it (`https://` only).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub web_demo: Option<String>,
     /// Brand colour, `#rrggbb`.
     pub color: String,
     /// A PNG release asset (at most 512 px on each side, 256 KB; square is best) used as its icon.
@@ -122,6 +125,9 @@ impl Descriptor {
         }
         if let Some(w) = &self.website {
             bad(valid_https(w), format!("website {w:?} must be an https:// link"));
+        }
+        if let Some(w) = &self.web_demo {
+            bad(valid_https(w), format!("web_demo {w:?} must be an https:// link"));
         }
         bad(parse_color(&self.color).is_some(), format!("color {:?} must be #rrggbb", self.color));
         if let Some(i) = &self.icon {
@@ -245,6 +251,7 @@ mod tests {
         "msi_publisher": "Example Org",
         "apple_team": null,
         "website": "https://example.org/examplecraft",
+        "web_demo": "https://example.org/examplecraft/try",
         "color": "#7a45b8",
         "icon": "examplecraft-128.png"
     }"##;
@@ -303,6 +310,9 @@ mod tests {
             ("website", "http://example.org".into()),
             ("website", "https://example.org/a|b".into()),
             ("website", "javascript:alert(1)".into()),
+            ("web_demo", "http://example.org/try".into()),
+            ("web_demo", "javascript:alert(1)".into()),
+            ("web_demo", "https://".into()),
             ("color", "red".into()),
             ("icon", "../icon.png".into()),
             ("icon", "icon.svg".into()),

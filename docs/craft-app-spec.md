@@ -31,6 +31,7 @@ An example:
   "msi_publisher": "Example Org",
   "apple_team": null,
   "website": "https://example.org/examplecraft",
+  "web_demo": "https://example.org/examplecraft/try",
   "color": "#7a45b8",
   "icon": "examplecraft-128.png"
 }
@@ -63,6 +64,7 @@ General rules:
 | `msi_publisher` | when a release ships an `.msi` | The Publisher your MSI registers (the launcher detects installs by it). Plain text, 1–100 characters, not a reserved MSI publisher. |
 | `apple_team` | no | The Apple Developer ID Team ID that signs your `.app`: exactly 10 characters, `A-Z` and `0-9`. Not ArtCraft's team. Without it the launcher never installs your `.dmg` (see section 3). |
 | `website` | no | An `https://` link of at most 200 bytes, with a host, no `@` or `\` in the host, and no whitespace, control characters, quotes (`"` or `'`), backtick, `<`, `>`, `\|`, `^`, `{` or `}`. |
+| `web_demo` | no | A page where the app can be tried in a web browser without installing it. The launcher shows it as a "Web demo" link on the app's card and details. The same rules as `website`. |
 | `color` | yes | Brand colour, `#rrggbb` (six hex digits, either case). |
 | `icon` | no | The file name of a `.png` release asset (`.png` in any case). A bare file name: 1–200 bytes, not starting with `.`, no control characters and none of `/ \ : < > " \| ? *`. The PNG itself is checked too (section 3). |
 | `former_ids` | no | Up to 8 older asset stems the releases may still use. Each follows the `id` rule and isn't reserved. Packages named with a former id are accepted. |

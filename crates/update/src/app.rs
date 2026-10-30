@@ -118,6 +118,7 @@ impl App {
             msi_publisher: self.msi_publisher.map(Into::into),
             apple_team: self.apple_team.map(Into::into),
             website: self.website.map(Into::into),
+            web_demo: None,
             color: "#000000".into(),
             icon: None,
             former_ids: owned(self.former_ids),
