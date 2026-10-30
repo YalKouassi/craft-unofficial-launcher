@@ -2535,3 +2535,17 @@ fn opening_an_app_counts_and_frequently_used_puts_the_most_opened_first() {
     let light = h.get_by_role_and_label(egui::accesskit::Role::Button, "More actions for LightCraft").rect();
     assert!(word.min.y < light.min.y || (word.min.y == light.min.y && word.min.x < light.min.x), "{word:?} {light:?}");
 }
+
+#[test]
+fn a_web_demo_has_its_own_button_and_the_toolbar_links_the_playground() {
+    let (mut h, _sent) = harness(ViewMode::Grid, egui::Theme::Light, true);
+    h.run_steps(6);
+    // Only SolidCraft names a web demo in the sample catalog.
+    assert_eq!(h.query_all_by_role_and_label(egui::accesskit::Role::Button, "Web demo").count(), 1);
+    h.get_by_role_and_label(egui::accesskit::Role::Button, "Try playground ↗");
+    h.check_accessibility();
+    // Tall enough to show SolidCraft's card, near the end of the grid.
+    h.set_size(egui::vec2(1180.0, 2900.0));
+    h.run_steps(2);
+    snapshot(&mut h, "web_demo_and_playground");
+}

@@ -80,8 +80,10 @@ const TAGLINE_SIZE: f32 = 12.0;
 /// The card's top strip: number tab and links.
 const STRIP_H: f32 = 40.0;
 const CARD_PAD: f32 = 20.0;
-/// A third-party site with web builds of many unofficial apps, linked from the header.
+/// A third-party site with web builds of many unofficial apps, linked from the toolbar.
 const PLAYGROUND_URL: &str = "https://playground.daijro.dev";
+/// The narrowest the main action button gets to make room for a "Web demo" button beside it.
+const MIN_MAIN_W: f32 = 120.0;
 /// Room macOS's traffic lights take at the left of the header.
 const TRAFFIC_LIGHTS_W: f32 = 72.0;
 
@@ -113,10 +115,6 @@ impl LauncherUi {
                 if widgets::nav_icon(ui, widgets::Glyph::Settings, tl!("Settings"), h, false).clicked() {
                     self.dialog = Some(Dialog::Settings);
                 }
-                // Web builds of many of these apps, to try in a browser before installing.
-                ui.add_space(16.0);
-                widgets::hud_link(ui, tl!("Try playground"), PLAYGROUND_URL);
-                ui.add_space(16.0);
                 // The controls reserve their actual widths before the secondary text gets space.
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
                     if ui.available_width() >= 17.0 + widgets::hud_galley(ui, tl!("Unofficial apps"), t.muted).size().x {
@@ -225,6 +223,9 @@ impl LauncherUi {
         ui.horizontal(|ui| {
             self.refresh_button(ui);
             self.add_button(ui);
+            if widgets::button(ui, &format!("{} ↗", tl!("Try playground")), Kind::Secondary, 0.0).on_hover_text(PLAYGROUND_URL).clicked() {
+                widgets::open_external_link(ui.ctx(), PLAYGROUND_URL);
+            }
             // Hiding an app is only undone from here, so the way back to the hidden ones stays
             // while there are any: a toggle, lit while the hidden apps are what the page shows.
             if !self.settings.hidden.is_empty() {
@@ -855,8 +856,9 @@ impl LauncherUi {
         self.actions_in(ui, entry, status, width, true);
     }
 
-    /// The main button and the `⋯` menu beside it. `links_in_menu` is false where the page shows
-    /// the website, GitHub and releases links as buttons of its own.
+    /// The main button, a "Web demo" button when the app names one and there's room, and the `⋯`
+    /// menu. `links_in_menu` is false where the page shows the website, GitHub, releases and web
+    /// demo links as buttons of its own.
     pub(crate) fn actions_in(&mut self, ui: &mut Ui, entry: &AppEntry, status: &AppStatus, width: f32, links_in_menu: bool) {
         let id = entry.app.id.to_string();
         // One square button (the menu) beside the main one.
@@ -869,8 +871,18 @@ impl LauncherUi {
         if self.paused_actions(ui, entry, &id, status, width, links_in_menu) {
             return;
         }
-        self.primary_button(ui, entry, &id, status, main_w);
-        self.menu(ui, entry, status, links_in_menu);
+        // The web demo gets a button of its own while the main one keeps room for its label;
+        // otherwise (a narrow table column) it stays in the menu.
+        let demo_label = tl!("Web demo");
+        let demo_w = widgets::button_width(ui, demo_label, 0.0) + gap;
+        let demo = entry.app.web_demo.filter(|_| links_in_menu && main_w - demo_w >= MIN_MAIN_W);
+        self.primary_button(ui, entry, &id, status, if demo.is_some() { main_w - demo_w } else { main_w });
+        if let Some(url) = demo
+            && widgets::button(ui, demo_label, Kind::Secondary, 0.0).on_hover_text(url).clicked()
+        {
+            widgets::open_external_link(ui.ctx(), url);
+        }
+        self.menu(ui, entry, status, links_in_menu, demo.is_none());
     }
 
     /// A running job's row: one progress bar, with pause and cancel while its download is under
@@ -959,7 +971,7 @@ impl LauncherUi {
         if widgets::glyph_button(ui, widgets::Glyph::Close, tl!("Discard download")).clicked() {
             self.act_command(Command::Cancel { app: id.to_string() });
         }
-        self.menu(ui, entry, status, links_in_menu);
+        self.menu(ui, entry, status, links_in_menu, true);
         true
     }
 
@@ -1012,8 +1024,8 @@ impl LauncherUi {
     /// external-link actions happen inline. "Download again" appears
     /// only for a kept download in a ready available/update state and cancels before installing;
     /// `links` adds the website/repository/releases rows, which the details drawer omits because it
-    /// shows them as buttons.
-    fn menu(&mut self, ui: &mut Ui, entry: &AppEntry, status: &AppStatus, links: bool) {
+    /// shows them as buttons; `demo` adds the web demo among them, unless it has a button beside.
+    fn menu(&mut self, ui: &mut Ui, entry: &AppEntry, status: &AppStatus, links: bool, demo: bool) {
         let id = entry.app.id.to_string();
         let manage = self.caps.manage_apps;
         let reveal = self.caps.reveal_label;
@@ -1049,8 +1061,8 @@ impl LauncherUi {
                         ui.close();
                     }
                 };
-                if let Some(demo) = entry.app.web_demo {
-                    link(ui, tl!("Web demo"), demo.to_string());
+                if let Some(url) = entry.app.web_demo.filter(|_| demo) {
+                    link(ui, tl!("Web demo"), url.to_string());
                 }
                 link(ui, tl!("Website"), entry.app.website());
                 link(ui, tl!("GitHub repository"), entry.app.repo_url());

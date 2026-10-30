@@ -154,6 +154,7 @@ pub const SUITE: [CraftApp; 14] = [
         msi_publisher: Some("SolidCraft contributors"),
         former_bundles: &["ai.storyteller.solidcraft", "ai.storyteller.solvecraft"],
         site: Some("https://solidcraft.io"),
+        web_demo: Some("https://solidcraft.io/try"),
         apple_team: None,
         ..app(
             "solidcraft",
