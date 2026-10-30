@@ -358,3 +358,5 @@ column	Version	版本
 	The app stays installed; only the launcher forgets it	应用仍保持安装；只是启动器不再记得它
 	Web demo	网页演示
 	Try playground	试用 Playground
+	Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL.	有自己的仓库？按照这些指南操作后，任何人都可以输入其 GitHub URL 在这里添加你的应用。
+	Guidelines for app authors	应用作者指南

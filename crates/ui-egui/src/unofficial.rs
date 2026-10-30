@@ -11,6 +11,9 @@ use crate::model::AppEntry;
 use crate::theme::{self, Tokens};
 use crate::widgets::{self, Kind};
 
+/// What an app's own releases need so anyone can add it by its repository (the public guide).
+const JOINING_URL: &str = "https://github.com/YalKouassi/craft-bridge/blob/main/JOINING.md";
+
 /// The Add app dialog's state, kept while the launcher runs so a long error list survives
 /// closing and reopening it.
 #[derive(Clone, Debug, Default)]
@@ -170,6 +173,17 @@ impl LauncherUi {
                 }
             });
         }
+        // For app authors: how to make their own repo something anyone can add here.
+        ui.add_space(14.0);
+        ui.add(
+            egui::Label::new(
+                RichText::new(tl!("Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL."))
+                    .color(t.muted),
+            )
+            .wrap(),
+        );
+        ui.add_space(4.0);
+        widgets::hud_link(ui, tl!("Guidelines for app authors"), JOINING_URL);
         ui.add_space(14.0);
         let mut close = false;
         ui.horizontal(|ui| {

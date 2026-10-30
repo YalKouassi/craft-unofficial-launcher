@@ -387,3 +387,5 @@ column	Author	Szerző
 	The app stays installed; only the launcher forgets it	Az alkalmazás telepítve marad; csak az indító felejti el
 	Web demo	Webes bemutató
 	Try playground	Playground kipróbálása
+	Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL.	Van egy repód? Kövesd ezeket az irányelveket, és bárki hozzáadhatja itt az alkalmazásodat a GitHub URL-jével.
+	Guidelines for app authors	Irányelvek alkalmazásszerzőknek

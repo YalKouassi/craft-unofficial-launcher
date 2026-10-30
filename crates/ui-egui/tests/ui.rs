@@ -2549,3 +2549,15 @@ fn a_web_demo_has_its_own_button_and_the_toolbar_links_the_playground() {
     h.run_steps(2);
     snapshot(&mut h, "web_demo_and_playground");
 }
+
+#[test]
+fn the_add_app_dialog_points_app_authors_at_the_guidelines() {
+    let (mut h, _sent) = harness(ViewMode::Grid, egui::Theme::Light, true);
+    h.run_steps(4);
+    h.get_by_role_and_label(egui::accesskit::Role::Button, "Add app").click();
+    h.run_steps(4);
+    h.get_by_label("Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL.");
+    h.get_by_role_and_label(egui::accesskit::Role::Link, "Guidelines for app authors");
+    h.check_accessibility();
+    snapshot(&mut h, "add_app_guidelines");
+}

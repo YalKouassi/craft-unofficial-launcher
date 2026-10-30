@@ -382,3 +382,5 @@ column	Author	Автор
 	The app stays installed; only the launcher forgets it	Приложение остаётся установленным; его забывает только лаунчер
 	Web demo	Веб-демо
 	Try playground	Попробовать playground
+	Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL.	Есть репозиторий? Следуйте этим правилам, и любой сможет добавить ваше приложение сюда по его URL на GitHub.
+	Guidelines for app authors	Правила для авторов приложений
