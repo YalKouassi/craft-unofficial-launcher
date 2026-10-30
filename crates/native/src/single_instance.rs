@@ -40,7 +40,8 @@ use std::time::{Duration, Instant};
 
 use artcraft_launcher_core::version::{self, Version};
 
-const PORT: u16 = 47_413;
+/// Not the official launcher's 47_413: the two must be able to run side by side.
+const PORT: u16 = 47_431;
 /// What launchers before the version handshake send (and still the answer to an unknown peer).
 const SHOW: &[u8] = b"craft-unofficial-launcher:show";
 /// `hello <version> <nonce>`: a second start introduces itself with its version and client nonce.
