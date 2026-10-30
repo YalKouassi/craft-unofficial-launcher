@@ -1,4 +1,10 @@
 {
   "schema": 1,
-  "apps": []
+  "apps": [
+    "https://github.com/YalKouassi/mailcraft-for-unofficial-launcher",
+    "https://github.com/YalKouassi/notecraft-for-unofficial-launcher",
+    "https://github.com/YalKouassi/rustgis-for-unofficial-launcher",
+    "https://github.com/YalKouassi/subcraft-for-unofficial-launcher",
+    "https://github.com/YalKouassi/procraft-for-unofficial-launcher"
+  ]
 }
