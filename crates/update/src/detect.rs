@@ -409,7 +409,7 @@ pub mod linux {
         }
         let order = [InstallSource::Deb, InstallSource::Rpm, InstallSource::Pacman, InstallSource::Flatpak];
         if let Some(p) = packages::find(app, &snapshot.packages, &order) {
-            let location = if p.manager == InstallSource::Flatpak { app.bundle_id() } else { binary_on_path(app.id) };
+            let location = if p.manager == InstallSource::Flatpak { app.bundle_id().to_string() } else { binary_on_path(app.id) };
             return Some(Installed { version: packages::version_of(p), source: p.manager, location, package: Some(p.name.clone()) });
         }
         detect_system_install(app)
