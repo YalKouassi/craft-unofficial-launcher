@@ -19,6 +19,8 @@
 > (PhotoCraft, FilmCraft, WordCraft…) use [ArtCraft Launcher](https://github.com/storytold/craft-launcher/releases/latest).
 > This launcher never lists official apps.
 
+![Craft Unofficial Launcher showing installed apps and apps available to install](docs/screenshot-apps.png)
+
 ## Why
 
 Many Craft-style apps exist outside the official suite. ArtCraft Launcher picks its community apps
