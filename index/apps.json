@@ -1,19 +1,58 @@
 {
   "schema": 1,
   "apps": [
-    "https://github.com/YalKouassi/mailcraft-for-unofficial-launcher",
-    "https://github.com/YalKouassi/notecraft-for-unofficial-launcher",
-    "https://github.com/YalKouassi/rustgis-for-unofficial-launcher",
-    "https://github.com/YalKouassi/subcraft-for-unofficial-launcher",
-    "https://github.com/YalKouassi/procraft-for-unofficial-launcher",
-    "https://github.com/YalKouassi/earthcraft-for-unofficial-launcher",
-    "https://github.com/YalKouassi/picasso-suite-for-unofficial-launcher",
-    "https://github.com/YalKouassi/prowave-for-unofficial-launcher",
-    "https://github.com/YalKouassi/transit-for-unofficial-launcher",
-    "https://github.com/YalKouassi/tracedraw-for-unofficial-launcher",
-    "https://github.com/YalKouassi/chromaforge-for-unofficial-launcher",
-    "https://github.com/YalKouassi/paintcraft-for-unofficial-launcher",
-    "https://github.com/YalKouassi/capsulecraft-for-unofficial-launcher",
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "mailcraft"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "notecraft"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "rustgis"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "subcraft"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "procraft"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "earthcraft"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "picasso-suite"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "prowave"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "transit"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "tracedraw"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "chromaforge"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "paintcraft"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "capsulecraft"
+    },
     "https://github.com/YalKouassi/HumanMotionCraft"
   ]
 }
