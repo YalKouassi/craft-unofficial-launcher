@@ -158,7 +158,26 @@ fn contains_encoded_separator(rest: &str) -> bool {
     bytes.windows(3).any(|w| w[0] == b'%' && matches!(&w[1..].to_ascii_lowercase()[..], b"2f" | b"5c"))
 }
 
-/// Reads `GET /repos/<repo>/releases/latest` (or one element of `/releases`).
+/// The GitHub API request for `source`'s latest release, and whether its answer is a release list
+/// (for [`parse_github_release_list`]) rather than one release (for [`parse_github_release`]).
+///
+/// `source` is a source key (`owner/name`, or `owner/name#app` in a shared release repo, see
+/// [`craft_app_descriptor::source`]). A shared repo's `releases/latest` is whichever app published
+/// last, so its apps always read the list.
+pub fn latest_request(source: &str, prereleases: bool) -> (String, bool) {
+    let repo = craft_app_descriptor::source::repo_of(source);
+    if source.contains('#') {
+        (format!("https://api.github.com/repos/{repo}/releases?per_page=100"), true)
+    } else if prereleases {
+        (format!("https://api.github.com/repos/{repo}/releases?per_page=30"), true)
+    } else {
+        (format!("https://api.github.com/repos/{repo}/releases/latest"), false)
+    }
+}
+
+/// Reads `GET /repos/<repo>/releases/latest` (or one element of `/releases`). Every function here
+/// that takes a `repo` takes a source key too: in a shared release repo, releases of other apps
+/// are skipped (a single one is refused).
 pub fn parse_github_release(json: &str, repo: &str) -> Result<Release, String> {
     let v: serde_json::Value = serde_json::from_str(json).map_err(|e| format!("unreadable answer from GitHub ({e})"))?;
     release_from_value(&v, repo)
@@ -224,11 +243,18 @@ pub fn parse_github_release_list(json: &str, repo: &str, allow_prerelease: bool)
     Ok(best)
 }
 
-fn release_from_value(v: &serde_json::Value, repo: &str) -> Result<Release, String> {
+fn release_from_value(v: &serde_json::Value, source: &str) -> Result<Release, String> {
     if let Some(msg) = v["message"].as_str() {
         return Err(if msg == "Not Found" { "no releases yet".into() } else { format!("GitHub says: {}", truncate(msg, 200)) });
     }
     let tag = v["tag_name"].as_str().filter(|t| !t.is_empty() && t.len() <= 64).ok_or("no release found")?.to_string();
+    let parsed = craft_app_descriptor::Source::parse(source);
+    let repo = parsed.map_or(source, |s| s.repo);
+    // In a shared release repo, the version is what follows `<app>-`; another app's release isn't ours.
+    let version_tag = match parsed {
+        Some(s) => s.version_tag(&tag).ok_or_else(|| format!("{tag} is another app's release"))?,
+        None => tag.as_str(),
+    };
     let releases = format!("https://github.com/{repo}/releases");
     let html_url = v["html_url"].as_str().and_then(|u| safe_release_html_url(repo, u)).unwrap_or_else(|| releases.clone());
     let prefix = download_prefix(repo);
@@ -249,7 +275,7 @@ fn release_from_value(v: &serde_json::Value, repo: &str) -> Result<Release, Stri
         })
         .unwrap_or_default();
     Ok(Release {
-        version: version::parse(&tag),
+        version: version::parse(version_tag),
         name: v["name"].as_str().map(|n| truncate(n, 120)).filter(|n| !n.is_empty()).unwrap_or_else(|| tag.clone()),
         tag,
         published_at: v["published_at"].as_str().and_then(crate::time::parse_rfc3339),
@@ -508,6 +534,32 @@ mod tests {
         assert_eq!(parse_github_release_list(json, REPO, false).unwrap().unwrap().tag, "v0.5.0");
         assert_eq!(parse_github_release_list(json, REPO, true).unwrap().unwrap().tag, "v0.6.0-rc.1");
         assert_eq!(parse_github_release_list("[]", REPO, false).unwrap(), None);
+    }
+
+    #[test]
+    fn a_shared_repo_reads_only_its_apps_releases() {
+        let dl = "https://github.com/org/bridges/releases/download";
+        let json = format!(
+            r#"[
+            {{"tag_name":"notecraft-v2.0.0","prerelease":false,"draft":false,"assets":[]}},
+            {{"tag_name":"mailcraft-v0.10.0","prerelease":false,"draft":false,"assets":[
+                {{"name":"mailcraft-0.10.0-linux-x86_64.AppImage","size":5,"browser_download_url":"{dl}/mailcraft-v0.10.0/mailcraft-0.10.0-linux-x86_64.AppImage"}},
+                {{"name":"evil.AppImage","size":5,"browser_download_url":"{dl}/notecraft-v2.0.0/evil.AppImage"}}]}},
+            {{"tag_name":"mailcraft-suite-v9.0.0","prerelease":false,"draft":false,"assets":[]}},
+            {{"tag_name":"mailcraft-v0.11.0-rc.1","prerelease":true,"draft":false,"assets":[]}},
+            {{"tag_name":"mailcraft-v0.9.0","prerelease":false,"draft":false,"assets":[]}}]"#
+        );
+        let key = "org/bridges#mailcraft";
+        let r = parse_github_release_list(&json, key, false).unwrap().unwrap();
+        assert_eq!(r.tag, "mailcraft-v0.10.0");
+        assert_eq!(r.version, version::parse("0.10.0"));
+        assert_eq!(r.assets.len(), 1, "an asset under another app's tag is dropped");
+        assert_eq!(parse_github_release_list(&json, key, true).unwrap().unwrap().tag, "mailcraft-v0.11.0-rc.1");
+        let versions: Vec<String> = parse_github_versions(&json, key).unwrap().into_iter().map(|r| r.tag).collect();
+        assert_eq!(versions, ["mailcraft-v0.10.0", "mailcraft-v0.11.0-rc.1", "mailcraft-v0.9.0"]);
+        assert!(parse_github_release(r#"{"tag_name":"notecraft-v2.0.0","assets":[]}"#, key).is_err());
+        assert_eq!(latest_request(key, false), ("https://api.github.com/repos/org/bridges/releases?per_page=100".to_string(), true));
+        assert_eq!(latest_request("org/app", false), ("https://api.github.com/repos/org/app/releases/latest".to_string(), false));
     }
 
     #[test]

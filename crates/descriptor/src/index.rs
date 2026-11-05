@@ -1,8 +1,12 @@
 //! The app index: a plain list of GitHub repository URLs.
 //!
 //! ```json
-//! { "schema": 1, "apps": ["https://github.com/owner/name", "owner/other"] }
+//! { "schema": 1, "apps": ["https://github.com/owner/name", "owner/other",
+//!                         {"repo": "owner/shared", "app": "examplecraft"}] }
 //! ```
+//!
+//! An entry with an `app` (or written `owner/shared#examplecraft`) is one app in a shared release
+//! repo; see [`crate::source`].
 //!
 //! Every listed repo is checked exactly like one a user adds by hand: its latest release's
 //! `craft-app.json`, checksums and release contract. A repo that passes appears in the launcher on
@@ -27,15 +31,15 @@ pub struct Index {
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IndexEntry {
-    /// GitHub `owner/repo`.
+    /// The source key: GitHub `owner/repo`, or `owner/repo#app` for one app of a shared repo.
     pub repo: String,
-    /// A name for logs and messages before the descriptor is read: the repo's name.
+    /// A name for logs and messages before the descriptor is read: the app id or the repo's name.
     pub name: String,
 }
 
 impl IndexEntry {
     fn new(repo: String) -> Self {
-        let name = repo.rsplit('/').next().unwrap_or_default().to_string();
+        let name = repo.rsplit(['/', '#']).next().unwrap_or_default().to_string();
         Self { repo, name }
     }
 }
@@ -51,10 +55,24 @@ pub fn repo_from_url(input: &str) -> Option<String> {
     valid_repo(&repo).then_some(repo)
 }
 
+/// A source key from what a user or the index wrote: a repo (as [`repo_from_url`] reads it), or
+/// `owner/name#app` (also `https://github.com/owner/name#app`) for one app of a shared repo.
+pub fn source_from_input(input: &str) -> Option<String> {
+    let (repo, app) = match input.trim().split_once('#') {
+        Some((repo, app)) => (repo, Some(app)),
+        None => (input, None),
+    };
+    let key = match app {
+        Some(app) => format!("{}#{app}", repo_from_url(repo)?),
+        None => repo_from_url(repo)?,
+    };
+    crate::source::Source::parse(&key).is_some().then_some(key)
+}
+
 impl Index {
-    /// Reads an index leniently: a bad entry is dropped, never the whole list. Entries are URL or
-    /// `owner/name` strings (`{"repo": …}` objects are read too); duplicates and official repos are
-    /// dropped.
+    /// Reads an index leniently: a bad entry is dropped, never the whole list. Entries are URL,
+    /// `owner/name` or `owner/name#app` strings, or `{"repo": …, "app": …}` objects; duplicates and
+    /// official repos are dropped.
     pub fn parse(bytes: &[u8]) -> Result<Self, String> {
         if bytes.len() > MAX_INDEX_BYTES {
             return Err(format!("the index is {} bytes; the limit is {MAX_INDEX_BYTES}", bytes.len()));
@@ -66,9 +84,16 @@ impl Index {
         }
         let mut apps: Vec<IndexEntry> = Vec::new();
         for e in raw.get("apps").and_then(serde_json::Value::as_array).into_iter().flatten() {
-            let text = e.as_str().or_else(|| e.get("repo").and_then(serde_json::Value::as_str));
-            let Some(repo) = text.and_then(repo_from_url) else { continue };
-            if crate::reserved::repo(&repo) || apps.iter().any(|a| a.repo.eq_ignore_ascii_case(&repo)) {
+            let text = match (e.as_str(), e.get("repo").and_then(serde_json::Value::as_str)) {
+                (Some(s), _) => Some(s.to_string()),
+                (None, Some(repo)) => match e.get("app") {
+                    None => Some(repo.to_string()),
+                    Some(app) => app.as_str().map(|app| format!("{repo}#{app}")),
+                },
+                (None, None) => None,
+            };
+            let Some(repo) = text.as_deref().and_then(source_from_input) else { continue };
+            if crate::reserved::repo(crate::source::repo_of(&repo)) || apps.iter().any(|a| a.repo.eq_ignore_ascii_case(&repo)) {
                 continue;
             }
             apps.push(IndexEntry::new(repo));
@@ -109,5 +134,35 @@ mod tests {
         assert_eq!(repo_from_url("github.com/a/b/releases").as_deref(), Some("a/b"));
         assert_eq!(repo_from_url("a/b").as_deref(), Some("a/b"));
         assert_eq!(repo_from_url("nonsense"), None);
+    }
+
+    #[test]
+    fn apps_of_a_shared_repo_are_separate_entries() {
+        let json = br#"{"schema":1,"apps":[
+            {"repo":"YalKouassi/craft-bridges","app":"mailcraft"},
+            {"repo":"https://github.com/YalKouassi/craft-bridges","app":"notecraft"},
+            "YalKouassi/craft-bridges#procraft",
+            "https://github.com/YalKouassi/craft-bridges#transit",
+            {"repo":"YalKouassi/craft-bridges","app":"mailcraft"},
+            {"repo":"YalKouassi/craft-bridges","app":"Bad App"},
+            {"repo":"YalKouassi/craft-bridges","app":7},
+            {"repo":"storytold/apps","app":"photocraft"},
+            "YalKouassi/craft-bridges"
+        ]}"#;
+        let i = Index::parse(json).unwrap();
+        let repos: Vec<&str> = i.apps.iter().map(|a| a.repo.as_str()).collect();
+        assert_eq!(
+            repos,
+            [
+                "YalKouassi/craft-bridges#mailcraft",
+                "YalKouassi/craft-bridges#notecraft",
+                "YalKouassi/craft-bridges#procraft",
+                "YalKouassi/craft-bridges#transit",
+                "YalKouassi/craft-bridges"
+            ]
+        );
+        assert_eq!(i.apps[0].name, "mailcraft");
+        assert_eq!(source_from_input("github.com/o/shared#x-craft").as_deref(), Some("o/shared#x-craft"));
+        assert_eq!(source_from_input("o/shared#"), None);
     }
 }

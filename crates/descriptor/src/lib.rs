@@ -14,10 +14,12 @@ pub mod contract;
 pub mod descriptor;
 pub mod index;
 pub mod reserved;
+pub mod source;
 
 pub use contract::{Report, check_release};
 pub use descriptor::{Descriptor, Problems};
 pub use index::{Index, IndexEntry};
+pub use source::Source;
 
 /// The descriptor's file name, both in an app's repo and as a release asset.
 pub const DESCRIPTOR_FILE: &str = "craft-app.json";

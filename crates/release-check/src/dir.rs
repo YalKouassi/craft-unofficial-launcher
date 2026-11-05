@@ -74,6 +74,11 @@ pub fn check_dir(dist: &Path, repo: &str, tag: &str) -> Result<Outcome, String> 
     }
 
     let assets: Vec<&str> = files.iter().map(String::as_str).filter(|n| !n.starts_with('.')).collect();
+    if let Some(s) = craft_app_descriptor::Source::parse(repo)
+        && s.version_tag(tag).is_none()
+    {
+        out.problems.push(format!("in a shared release repo, {}'s tags are {}", s.app.unwrap_or_default(), s.tag_for("<version>")));
+    }
     out.absorb(check_release(&d, tag, &assets, sums_text.as_deref()));
     Ok(out.finish())
 }

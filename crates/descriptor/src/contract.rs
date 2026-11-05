@@ -97,6 +97,8 @@ pub fn check_release(d: &Descriptor, tag: &str, assets: &[&str], sums: Option<&s
     if r.packages.is_empty() {
         r.problems.push(format!("no package is named {}-<version>-<os>-<arch>[-portable].<ext>", d.id));
     }
+    // In a shared release repo the tag is `<id>-v1.2.3`.
+    let tag = crate::source::Source { repo: &d.repo, app: Some(&d.id) }.version_tag(tag).unwrap_or(tag);
     let want = tag.strip_prefix('v').unwrap_or(tag);
     for p in &r.packages {
         if p.version != want {
@@ -187,6 +189,14 @@ mod tests {
         assert!(check_release(&d, "v1.2.0", GOOD, Some(&short)).problems.iter().any(|p| p.contains("doesn't list notecraft-1.2.0-windows-x64.msi")));
         let extra = sums(GOOD) + &format!("{}  ghost.exe\n", "0".repeat(64));
         assert!(!check_release(&d, "v1.2.0", GOOD, Some(&extra)).ok());
+    }
+
+    #[test]
+    fn a_shared_repo_tag_names_the_app() {
+        let d = desc();
+        assert!(check_release(&d, "notecraft-v1.2.0", GOOD, Some(&sums(GOOD))).ok());
+        assert!(!check_release(&d, "notecraft-v1.3.0", GOOD, Some(&sums(GOOD))).ok());
+        assert!(!check_release(&d, "mailcraft-v1.2.0", GOOD, Some(&sums(GOOD))).ok(), "another app's tag");
     }
 
     #[test]

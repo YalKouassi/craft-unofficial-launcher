@@ -37,7 +37,10 @@ pub struct CraftApp {
     pub ink_light: [u8; 3],
     /// The brand colour for text on a dark background.
     pub ink_dark: [u8; 3],
-    /// GitHub `owner/repo`, pinned when the user added the app. Releases come only from here.
+    /// Where its releases come from, pinned when the user added the app: GitHub `owner/repo`, or
+    /// `owner/repo#<id>` for one app of a shared release repo (see
+    /// [`craft_app_descriptor::source`]). Releases come only from here. [`Self::github_repo`] is
+    /// the repo alone.
     pub repo: &'static str,
     /// Older names its release assets may carry.
     pub former_ids: &'static [&'static str],
@@ -71,12 +74,21 @@ impl CraftApp {
         self.bundle.unwrap_or(self.id).to_string()
     }
 
+    /// Its GitHub repo (`owner/name`), without the app part of a shared repo's source key.
+    pub fn github_repo(&self) -> &'static str {
+        craft_app_descriptor::source::repo_of(self.repo)
+    }
+
+    /// Its releases page; in a shared release repo, searched for its own releases.
     pub fn releases_url(&self) -> String {
-        format!("https://github.com/{}/releases", self.repo)
+        match self.repo.split_once('#') {
+            Some((repo, app)) => format!("https://github.com/{repo}/releases?q={app}-v&expanded=true"),
+            None => format!("https://github.com/{}/releases", self.repo),
+        }
     }
 
     pub fn repo_url(&self) -> String {
-        format!("https://github.com/{}", self.repo)
+        format!("https://github.com/{}", self.github_repo())
     }
 
     /// Its website, or its repository when it names none.
@@ -109,12 +121,18 @@ impl CraftApp {
         apps().iter().find(|a| a.id == id).or_else(|| (id == LAUNCHER_ID).then_some(&LAUNCHER))
     }
 
-    /// The entry for a checked descriptor and its (checked) icon. The same descriptor always
-    /// gives back the same entry, so refreshing the catalog doesn't grow memory.
+    /// The entry for a checked descriptor and its (checked) icon, from its own repo.
     pub fn from_descriptor(d: &Descriptor, icon: Option<&[u8]>) -> CraftApp {
-        type Key = (String, Option<Vec<u8>>);
+        Self::from_descriptor_at(d, &d.repo, icon)
+    }
+
+    /// The entry for a checked descriptor read from `source` (its source key; see
+    /// [`CraftApp::repo`]) and its (checked) icon. The same descriptor always gives back the same
+    /// entry, so refreshing the catalog doesn't grow memory.
+    pub fn from_descriptor_at(d: &Descriptor, source: &str, icon: Option<&[u8]>) -> CraftApp {
+        type Key = (String, String, Option<Vec<u8>>);
         static INTERNED: Mutex<BTreeMap<Key, CraftApp>> = Mutex::new(BTreeMap::new());
-        let key = (d.to_json(), icon.map(<[u8]>::to_vec));
+        let key = (d.to_json(), source.to_string(), icon.map(<[u8]>::to_vec));
         let mut interned = INTERNED.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some(app) = interned.get(&key) {
             return *app;
@@ -127,7 +145,7 @@ impl CraftApp {
             color,
             ink_light: mix(color, [0, 0, 0], 0.3),
             ink_dark: mix(color, [255, 255, 255], 0.35),
-            repo: leak(&d.repo),
+            repo: leak(source),
             former_ids: leak_all(&d.former_ids),
             former_names: leak_all(&d.former_names),
             kind: AppKind::Community,

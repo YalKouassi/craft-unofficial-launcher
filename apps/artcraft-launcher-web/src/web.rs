@@ -243,12 +243,9 @@ async fn picture(url: &str) -> Result<Vec<u8>, PictureError> {
 }
 
 /// The latest release; `Err(Some(reset))` when rate-limited, `Err(None)` on other failures.
+/// `repo` is a source key (`owner/name`, or `owner/name#app` in a shared release repo).
 async fn latest(repo: &str, prereleases: bool) -> Result<LatestRelease, Option<i64>> {
-    let url = if prereleases {
-        format!("https://api.github.com/repos/{repo}/releases?per_page=30")
-    } else {
-        format!("https://api.github.com/repos/{repo}/releases/latest")
-    };
+    let (url, list) = release::latest_request(repo, prereleases);
     let window = web_sys::window().ok_or(None)?;
     let init = web_sys::RequestInit::new();
     init.set_method("GET");
@@ -266,8 +263,8 @@ async fn latest(repo: &str, prereleases: bool) -> Result<LatestRelease, Option<i
         _ => return Err(None),
     }
     let text = JsFuture::from(resp.text().map_err(|_| None)?).await.map_err(|_| None)?.as_string().ok_or(None)?;
-    let found: Option<Release> = if prereleases {
-        release::parse_github_release_list(&text, repo, true).map_err(|_| None)?
+    let found: Option<Release> = if list {
+        release::parse_github_release_list(&text, repo, prereleases).map_err(|_| None)?
     } else {
         Some(release::parse_github_release(&text, repo).map_err(|_| None)?)
     };

@@ -113,7 +113,7 @@ Every package is named
 - `<id>` is the descriptor's `id` or one of its `former_ids`.
 - `<version>` is a [SemVer](https://semver.org) version that starts with a digit (`1.2.0`,
   `1.2.0-beta.1`). It must equal the release tag without its leading `v` (tag `v1.2.0` or `1.2.0`
-  both mean `1.2.0`). All packages share it.
+  both mean `1.2.0`; in a shared release repo, `<id>-v1.2.0`, see section 6). All packages share it.
 - `<os>-<arch>` is one of:
 
   | OS | Tokens |
@@ -236,3 +236,18 @@ Pin both the action and `checker-ref` to a commit. After publishing, `craft-rele
    **bridge** repo (the releases come from there) and whose `upstream` names the original project.
    The bridge still may not use a reserved id, name, bundle id, publisher or team; `publisher`
    should say who maintains the bridge builds.
+
+## 6. Shared release repos
+
+Several apps can publish their releases in one repo, which is how the bridges in
+[craft-bridges](https://github.com/YalKouassi/craft-bridges) work. Each app is then added as
+`owner/name#<id>` (in `index/apps.json`: `{"repo": "owner/name", "app": "<id>"}`), and:
+
+- every release belongs to one app, and its tag is `<id>-v<version>` (`mailcraft-v0.10.0`);
+- each app's `craft-app.json` names the shared repo as its `repo`, and its `id` must be the `<id>`
+  it was added as. The launcher pins both, so one app's release is never read as another's;
+- the launcher finds an app's latest release in the repo's release list (the newest 100), not
+  through `releases/latest`, which only names the repo's most recent release of any app. So an
+  app whose release falls out of the newest 100 isn't seen until it publishes again;
+- the repo can't be added as a whole (without `#<id>`);
+- check a release with `craft-release-check github --repo owner/name#<id> --tag <id>-v<version>`.

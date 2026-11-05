@@ -13,6 +13,8 @@ USAGE:
     craft-release-check github --repo <owner/name> [--tag <vX.Y.Z>] [--json]
         Check a published GitHub release (the latest one without --tag). GITHUB_TOKEN, when set,
         is sent to api.github.com only.
+
+    For one app of a shared release repo, give --repo <owner/name>#<id> and --tag <id>-vX.Y.Z.
     craft-release-check sums <dist-dir>
         Write <dist-dir>/SHA256SUMS.txt for every file in the folder.
     craft-release-check init --repo <owner/name> --id <id> --name <Name>

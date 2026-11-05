@@ -71,8 +71,9 @@ impl std::error::Error for Problems {}
 const MAX_LIST: usize = 8;
 
 impl Descriptor {
-    /// Reads and checks a descriptor. `repo` is the GitHub `owner/repo` it was fetched from (or
-    /// the repo the app is built in); the descriptor must name that same repo.
+    /// Reads and checks a descriptor. `repo` is the source key it was fetched from: the GitHub
+    /// `owner/repo` (or the repo the app is built in), or `owner/repo#app` in a shared release
+    /// repo. The descriptor must name that same repo (and, when shared, have that id).
     pub fn parse(bytes: &[u8], repo: &str) -> Result<Self, Problems> {
         if bytes.len() > MAX_DESCRIPTOR_BYTES {
             return Err(Problems(vec![format!("{} is {} bytes; the limit is {MAX_DESCRIPTOR_BYTES}", crate::DESCRIPTOR_FILE, bytes.len())]));
@@ -82,9 +83,13 @@ impl Descriptor {
         Ok(d)
     }
 
-    /// Runs every check [`Descriptor::parse`] runs.
-    pub fn check(&self, repo: &str) -> Result<(), Problems> {
+    /// Runs every check [`Descriptor::parse`] runs. `source` is the key of where the descriptor
+    /// came from (`owner/name`, or `owner/name#app` in a shared release repo, whose app id the
+    /// descriptor's `id` must equal).
+    pub fn check(&self, source: &str) -> Result<(), Problems> {
         let mut p = Vec::new();
+        let repo = crate::source::repo_of(source);
+        let app = crate::source::Source::parse(source).and_then(|s| s.app);
         let mut bad = |ok: bool, msg: String| {
             if !ok {
                 p.push(msg);
@@ -105,6 +110,11 @@ impl Descriptor {
         bad(valid_repo(&self.repo), format!("repo {:?} must be a GitHub owner/name", self.repo));
         bad(self.repo.eq_ignore_ascii_case(repo), format!("repo {:?} doesn't match the repository it came from ({repo})", self.repo));
         bad(!reserved::repo(&self.repo), "an unofficial app can't live under an official GitHub account".into());
+        if let Some(app) = app {
+            bad(self.id == app, format!("id {:?} doesn't match the app {app:?} it was listed as in {repo}", self.id));
+        } else {
+            bad(!source.contains('#'), format!("{source:?} isn't a valid owner/name#app"));
+        }
         bad(valid_text(&self.publisher, 60), "publisher must be 1–60 characters of plain text".into());
         bad(!reserved::publisher(&self.publisher), format!("publisher {:?} belongs to ArtCraft", self.publisher));
         if let Some(up) = &self.upstream {
@@ -280,6 +290,17 @@ mod tests {
     fn the_repo_must_be_the_one_it_came_from() {
         let e = Descriptor::parse(EXAMPLE.as_bytes(), "someone-else/examplecraft").unwrap_err();
         assert!(e.to_string().contains("doesn't match"), "{e}");
+    }
+
+    #[test]
+    fn in_a_shared_repo_the_id_must_be_the_listed_app() {
+        let shared = with("repo", "example-org/bridges".into());
+        assert_eq!(Descriptor::parse(&shared, "example-org/bridges#examplecraft").unwrap().id, "examplecraft");
+        let e = Descriptor::parse(&shared, "example-org/bridges#othercraft").unwrap_err();
+        assert!(e.to_string().contains("doesn't match the app"), "{e}");
+        assert!(Descriptor::parse(&shared, "example-org/elsewhere#examplecraft").is_err());
+        assert!(Descriptor::parse(&shared, "example-org/bridges#").is_err());
+        assert!(Descriptor::parse(&shared, "example-org/bridges#Bad").is_err());
     }
 
     #[test]

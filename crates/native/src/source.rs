@@ -98,19 +98,17 @@ impl GitHubSource {
         until.is_some_and(|u| u > crate::now())
     }
 
+    /// `repo` here and below is a source key: `owner/name`, or `owner/name#app` in a shared
+    /// release repo, whose app reads the repo's release list and never its `releases/latest`.
     fn ask_api(&self, repo: &str, prereleases: bool) -> Result<Option<Answer>, String> {
-        let url = if prereleases {
-            format!("https://api.github.com/repos/{repo}/releases?per_page=30")
-        } else {
-            format!("https://api.github.com/repos/{repo}/releases/latest")
-        };
+        let (url, list) = release::latest_request(repo, prereleases);
         let saved = self.entry(repo, prereleases);
         let found =
             |release: Option<Release>| Answer { latest: release.map_or(LatestRelease::None, LatestRelease::Found), source: Source::GitHubApi };
         match self.http.get_api(&url, saved.as_ref().and_then(|e| e.etag.as_deref()))? {
             Fetched::Body { text, etag } => {
-                let release = if prereleases {
-                    release::parse_github_release_list(&text, repo, true)?
+                let release = if list {
+                    release::parse_github_release_list(&text, repo, prereleases)?
                 } else {
                     Some(release::parse_github_release(&text, repo)?)
                 };
@@ -165,7 +163,7 @@ impl ReleaseSource for GitHubSource {
         if self.limited() {
             return Err("GitHub's request limit was reached. Try again later.".into());
         }
-        let url = format!("https://api.github.com/repos/{repo}/releases?per_page=100");
+        let url = format!("https://api.github.com/repos/{}/releases?per_page=100", craft_app_descriptor::source::repo_of(repo));
         let list = match self.http.get_api(&url, None)? {
             Fetched::Body { text, .. } => release::parse_github_versions(&text, repo)?,
             Fetched::NotFound => Vec::new(),
@@ -189,7 +187,8 @@ impl ReleaseSource for GitHubSource {
                 Err(e) => Some(e),
             }
         };
-        if !prereleases && api_error.is_none() {
+        // The release pages know only one latest release per repo: never a shared repo's app's.
+        if !prereleases && api_error.is_none() && !repo.contains('#') {
             match self.ask_pages(repo) {
                 Ok(answer) => return answer,
                 Err(e) => log::warn!("{repo}: release pages: {e}"),
@@ -207,6 +206,9 @@ impl ReleaseSource for GitHubSource {
     }
 
     fn newest_tag(&self, repo: &str) -> Option<String> {
+        if repo.contains('#') {
+            return None;
+        }
         match self.http.redirect_target(&format!("https://github.com/{repo}/releases/latest")) {
             Ok(location) => location.as_deref().and_then(|l| release::tag_from_redirect(l, repo)),
             Err(e) => {

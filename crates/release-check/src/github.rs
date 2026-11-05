@@ -8,7 +8,6 @@
 use std::io::Read;
 use std::time::Duration;
 
-use craft_app_descriptor::descriptor::valid_repo;
 use craft_app_descriptor::{
     DESCRIPTOR_FILE, Descriptor, MAX_DESCRIPTOR_BYTES, MAX_ICON_BYTES, SUMS_FILE, check_icon, check_release, parse_sha256sums,
 };
@@ -45,9 +44,13 @@ pub struct Asset {
 }
 
 /// Fetches the release (`tag`, or the latest) of `repo` and checks it.
-pub fn check_github(repo: &str, tag: Option<&str>) -> Result<(String, Outcome), String> {
-    if !valid_repo(repo) {
-        return Err(format!("--repo {repo:?} must be a GitHub owner/name"));
+pub fn check_github(source: &str, tag: Option<&str>) -> Result<(String, Outcome), String> {
+    let Some(parsed) = craft_app_descriptor::Source::parse(source) else {
+        return Err(format!("--repo {source:?} must be a GitHub owner/name (or owner/name#app for one app of a shared release repo)"));
+    };
+    let repo = parsed.repo;
+    if parsed.app.is_some() && tag.is_none() {
+        return Err(format!("{source} is one app of a shared release repo, whose latest release may be another app's: give --tag"));
     }
     let client = Client::new();
     let url = match tag {
@@ -63,7 +66,7 @@ pub fn check_github(repo: &str, tag: Option<&str>) -> Result<(String, Outcome), 
     })?;
     let release: Release = serde_json::from_slice(&body).map_err(|e| format!("GitHub's release answer isn't what was expected: {e}"))?;
     let prefix = format!("{API}/repos/{repo}/releases/assets/");
-    let outcome = evaluate(repo, &release, |asset, max| {
+    let outcome = evaluate(source, &release, |asset, max| {
         if !asset.url.to_ascii_lowercase().starts_with(&prefix.to_ascii_lowercase()) {
             return Err(format!("{}'s download URL isn't on {prefix}", asset.name));
         }
@@ -82,6 +85,11 @@ where
     F: FnMut(&Asset, usize) -> Result<Vec<u8>, String>,
 {
     let mut out = Outcome::default();
+    if let Some(s) = craft_app_descriptor::Source::parse(repo)
+        && s.version_tag(&release.tag_name).is_none()
+    {
+        out.problems.push(format!("{} is another app's release, not {}'s", release.tag_name, s.app.unwrap_or_default()));
+    }
     let find = |name: &str| release.assets.iter().find(|a| a.name == name);
     if release.draft {
         out.warnings.push("this release is a draft: the launcher can't see it until it's published".into());
@@ -283,6 +291,20 @@ mod tests {
         let o = evaluate("o/notecraft", &r, |a, _| Err(format!("fetched {}", a.name))).unwrap();
         assert!(!o.ok);
         assert!(o.problems.iter().any(|p| p.contains("the limit is")), "{:?}", o.problems);
+    }
+
+    #[test]
+    fn one_app_of_a_shared_repo_is_checked_by_its_tag() {
+        let mut r = release(&["notecraft-1.0.0-linux-x86_64.tar.gz", DESCRIPTOR_FILE, SUMS_FILE]);
+        let key = "o/notecraft#notecraft";
+        let sum = sums::sha256_bytes(DESC.as_bytes());
+        let o = evaluate(key, &r, files(&sum)).unwrap();
+        assert!(o.problems.iter().any(|p| p.contains("another app's release")), "a plain v1.0.0 tag: {:?}", o.problems);
+        r.tag_name = "notecraft-v1.0.0".into();
+        let o = evaluate(key, &r, files(&sum)).unwrap();
+        assert!(o.ok, "{:?}", o.problems);
+        assert!(evaluate("o/notecraft#mailcraft", &r, files(&sum)).unwrap().problems.iter().any(|p| p.contains("doesn't match the app")));
+        assert!(check_github(key, None).unwrap_err().contains("give --tag"));
     }
 
     #[test]

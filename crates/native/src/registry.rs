@@ -66,7 +66,8 @@ impl Pin {
 /// One added app, as saved.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Stored {
-    /// The repo the user entered, as GitHub spells it in the descriptor.
+    /// Its source key (`owner/name`, or `owner/name#app` in a shared release repo), as GitHub
+    /// spells the repo in the descriptor.
     pub repo: String,
     /// The release the descriptor was read from.
     pub tag: String,
@@ -149,7 +150,7 @@ impl Registry {
             .iter()
             .map(|s| {
                 let icon = std::fs::read(self.icon_path(&s.descriptor.id)).ok().filter(|b| craft_app_descriptor::check_icon(b).is_ok());
-                CraftApp::from_descriptor(&s.descriptor, icon.as_deref())
+                CraftApp::from_descriptor_at(&s.descriptor, &s.repo, icon.as_deref())
             })
             .collect()
     }
@@ -217,12 +218,12 @@ impl Registry {
     }
 
     fn insert(&mut self, fetch: &dyn Fetch, repo: &str, from_index: bool) -> Result<String, Vec<String>> {
-        let repo =
-            normalise_repo(repo).ok_or_else(|| vec![format!("{repo:?} isn't a GitHub repository (owner/name, or its https://github.com/ link)")])?;
-        if craft_app_descriptor::reserved::repo(&repo) {
+        let repo = normalise_repo(repo)
+            .ok_or_else(|| vec![format!("{repo:?} isn't a GitHub repository (owner/name, owner/name#app, or its https://github.com/ link)")])?;
+        if craft_app_descriptor::reserved::repo(craft_app_descriptor::source::repo_of(&repo)) {
             return Err(vec!["official ArtCraft apps belong in ArtCraft Launcher; this launcher only lists unofficial apps".into()]);
         }
-        if repo.eq_ignore_ascii_case(craft_app_descriptor::reserved::LAUNCHER_REPO) {
+        if craft_app_descriptor::source::repo_of(&repo).eq_ignore_ascii_case(craft_app_descriptor::reserved::LAUNCHER_REPO) {
             return Err(vec!["that's this launcher's own repository; it updates itself and isn't listed as an app".into()]);
         }
         if self.apps.iter().any(|s| s.repo.eq_ignore_ascii_case(&repo)) {
@@ -238,7 +239,9 @@ impl Registry {
         }
         self.save_icon(&d.id, got.icon.as_deref());
         let id = d.id.clone();
-        self.apps.push(Stored { repo: d.repo.clone(), tag: got.tag, pin: Pin::of(d), descriptor: got.descriptor, problems: Vec::new(), from_index });
+        // The key, with the repo spelt as GitHub (and the descriptor) spell it.
+        let key = if repo.contains('#') { format!("{}#{}", d.repo, d.id) } else { d.repo.clone() };
+        self.apps.push(Stored { repo: key, tag: got.tag, pin: Pin::of(d), descriptor: got.descriptor, problems: Vec::new(), from_index });
         self.save().map_err(|e| vec![format!("couldn't save the list: {e}")])?;
         Ok(id)
     }
@@ -308,9 +311,9 @@ impl Registry {
 /// Problems that start with this are network trouble, not the app's fault.
 const OFFLINE: &str = "couldn't reach";
 
-/// `owner/name`, from either that or a `https://github.com/owner/name[/…]` link.
+/// A source key, from `owner/name`, `owner/name#app` or a `https://github.com/owner/name[/…]` link.
 pub fn normalise_repo(input: &str) -> Option<String> {
-    craft_app_descriptor::index::repo_from_url(input)
+    craft_app_descriptor::index::source_from_input(input)
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
@@ -340,6 +343,14 @@ pub fn fetch_descriptor(fetch: &dyn Fetch, repo: &str) -> Result<Fetched, Vec<St
         }
     };
     let descriptor = Descriptor::parse(&verified(DESCRIPTOR_FILE, MAX_DESCRIPTOR_BYTES + 1)?, repo).map_err(|p| p.0)?;
+    // A `<id>-v1.2.3` tag means a shared release repo, whose apps are added one at a time: the
+    // repo's latest release is just whichever app published last.
+    if !repo.contains('#') && release.tag.starts_with(&format!("{}-", descriptor.id)) {
+        return Err(vec![format!(
+            "{repo} holds the releases of several apps, so it can't be added as a whole: add one app as {repo}#<app>, e.g. {repo}#{}",
+            descriptor.id
+        )]);
+    }
     let names: Vec<&str> = release.assets.iter().map(|a| a.name.as_str()).collect();
     let report = craft_app_descriptor::check_release(&descriptor, &release.tag, &names, Some(&sums_text));
     if !report.ok() {
@@ -444,6 +455,25 @@ mod tests {
         let entries = again.entries();
         assert_eq!(entries[0].bundle_id(), "org.someone.notecraft");
         assert!(entries[0].icon_png.is_some(), "the icon was saved and read back");
+    }
+
+    #[test]
+    fn an_app_of_a_shared_repo_is_pinned_by_repo_and_id() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut reg = Registry::load(dir.path());
+        let shared = descriptor("org.someone.notecraft").replace(REPO, "Org/Bridges");
+        let mut fake = Fake::new("v1.2.0", &shared);
+        fake.tag = "notecraft-v1.2.0".into();
+        fake.write_sums();
+        assert!(reg.add(&fake, "org/bridges#othercraft").unwrap_err().iter().any(|p| p.contains("doesn't match the app")));
+        assert!(reg.add(&fake, "org/bridges").is_err(), "the descriptor names a shared repo's app, not the whole repo");
+        assert_eq!(reg.add(&fake, "https://github.com/org/bridges#notecraft"), Ok("notecraft".into()));
+        assert!(reg.add(&fake, "Org/Bridges#notecraft").unwrap_err()[0].contains("already"));
+        let again = Registry::load(dir.path());
+        assert_eq!(again.repos(), ["Org/Bridges#notecraft"]);
+        let app = again.entries()[0];
+        assert_eq!((app.repo, app.github_repo()), ("Org/Bridges#notecraft", "Org/Bridges"));
+        assert_eq!(app.releases_url(), "https://github.com/Org/Bridges/releases?q=notecraft-v&expanded=true");
     }
 
     #[test]
