@@ -728,12 +728,19 @@ fn same_cache_as_helper(app: &App, paths: &Paths, exe: &Path) -> Result<(), Stri
 }
 
 /// Accepts `file` when it carries a valid Authenticode signature from the same publisher as
-/// `reference`, this program. Refuses an unsigned file, another publisher's, and every file when
-/// `reference` itself isn't signed.
+/// `reference`, this program; refuses an unsigned file and another publisher's.
+///
+/// An unsigned `reference` (a build made without the signing secrets) has no publisher to match,
+/// so it accepts any file: the download is then vouched for only by the release's
+/// `SHA256SUMS.txt`, fetched from the app's own repo over HTTPS, as a first download is. Once a
+/// signed copy is installed, it never accepts an unsigned update again.
 #[cfg(windows)]
 fn signed_like(app: &App, reference: &Path, file: &Path) -> Result<(), String> {
     let publisher = |path: &Path| verifysign::verify_file(path).map(|signature| signature.subject_name());
-    let ours = publisher(reference).map_err(|e| format!("this copy of {} isn't signed ({e}), so it doesn't install updates", app.name))?;
+    let Ok(ours) = publisher(reference) else {
+        log::info!("this copy of {} isn't signed; {} is checked only against the release's checksums", app.name, file.display());
+        return Ok(());
+    };
     let theirs = publisher(file).map_err(|e| format!("{} isn't signed ({e})", file.display()))?;
     if ours == theirs { Ok(()) } else { Err(format!("{} isn't signed by {}'s publisher", file.display(), app.name)) }
 }
@@ -1271,7 +1278,8 @@ mod tests {
         gone.id()
     }
 
-    /// A catalog-signed program matches itself; an unsigned one never does, on either side.
+    /// A catalog-signed program matches itself and refuses an unsigned one; an unsigned launcher
+    /// has no publisher to match, so it accepts either.
     #[cfg(windows)]
     #[test]
     fn a_file_must_be_signed_by_the_launchers_own_publisher() {
@@ -1280,20 +1288,21 @@ mod tests {
         let unsigned = std::env::current_exe().unwrap();
         assert_eq!(signed_like(&crate::testing::LAUNCHER, &cmd, &cmd), Ok(()));
         assert!(signed_like(&crate::testing::LAUNCHER, &cmd, &unsigned).is_err_and(|e| e.contains("isn't signed")));
-        assert!(signed_like(&crate::testing::LAUNCHER, &unsigned, &cmd).is_err_and(|e| e.contains("doesn't install updates")));
+        assert_eq!(signed_like(&crate::testing::LAUNCHER, &unsigned, &cmd), Ok(()));
+        assert_eq!(signed_like(&crate::testing::LAUNCHER, &unsigned, &unsigned), Ok(()));
     }
 
-    /// An unsigned launcher says so before it quits for an update. `cargo test` binaries are
-    /// unsigned, like a package built without the signing secrets.
+    /// An unsigned launcher (`cargo test` binaries are unsigned, like a package built without the
+    /// signing secrets) isn't stopped by signatures; the other checks still run before it quits.
     #[cfg(windows)]
     #[test]
-    fn an_unsigned_launcher_refuses_to_update_before_it_quits() {
+    fn an_unsigned_launcher_skips_only_the_signature_check() {
         let dir = tempfile::tempdir().unwrap();
         let msi = dir.path().join("example-launcher-0.2.0-windows-x64.msi");
         std::fs::write(&msi, "not a package").unwrap();
         for install in [Install::Msi(system_program("msiexec.exe")), Install::Portable(system_program("msiexec.exe"))] {
             let error = windows_precheck(&crate::testing::LAUNCHER, &install, &Paths::under(dir.path()), &msi).unwrap_err();
-            assert!(error.contains("isn't signed"), "{error}");
+            assert!(!error.contains("signed") && error.contains("only finishes"), "{error}");
         }
     }
 
