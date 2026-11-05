@@ -33,7 +33,7 @@ impl LauncherUi {
         let response = match &mut dialog {
             Dialog::Notes(id) => modal.show(ctx, |ui| close = self.notes_dialog(ui, id)),
             Dialog::ConfirmUninstall(id) => modal.show(ctx, |ui| close = self.uninstall_dialog(ui, id)),
-            Dialog::Install { app, folder } => modal.show(ctx, |ui| close = self.install_dialog(ui, app, folder, host)),
+            Dialog::Install { app, folder, filled } => modal.show(ctx, |ui| close = self.install_dialog(ui, app, folder, filled, host)),
             Dialog::Replace { app, path } => modal.show(ctx, |ui| close = self.replace_dialog(ui, app, path)),
             Dialog::Settings => modal.show(ctx, |ui| close = self.settings_dialog(ui, host)),
             Dialog::LauncherUpdate(r) => modal.show(ctx, |ui| close = self.launcher_update_dialog(ui, r)),
@@ -261,15 +261,24 @@ impl LauncherUi {
     }
 
     /// Lets the user choose this app's install folder and returns `true` when the dialog should
-    /// close, including when the app entry is gone. An empty field removes the per-app override, a
-    /// non-empty one persists it, and any changed configuration is sent before the install is queued. The path
-    /// itself is not validated here.
-    fn install_dialog(&mut self, ui: &mut egui::Ui, id: &str, folder: &mut String, host: &mut dyn Host) -> bool {
+    /// close, including when the app entry is gone. The field starts with the app's saved folder,
+    /// else the folder the install would use anyway (filled in as soon as that is known), so it
+    /// can be edited rather than retyped. An empty field, or the default left as it is, removes
+    /// the per-app override; anything else persists it. Any changed configuration is sent before
+    /// the install is queued. The path itself is not validated here.
+    fn install_dialog(&mut self, ui: &mut egui::Ui, id: &str, folder: &mut String, filled: &mut bool, host: &mut dyn Host) -> bool {
         let Some(app) = self.entry(id).map(|e| e.app) else { return true };
         ui.set_width(440.0f32.min(ui.ctx().content_rect().width() - 80.0));
         Self::title(ui, None, app.name, tl!("Install folder"));
         let default = self.settings.install_locations.root.clone().or_else(|| self.default_folder_for(id, host));
-        Self::folder_field(ui, folder, default.as_deref(), host);
+        if !*filled && let Some(default) = &default {
+            folder.clone_from(default);
+            *filled = true;
+        }
+        if Self::folder_field(ui, folder, default.as_deref(), host) {
+            // "Use default" shows the default itself, as the dialog did when it opened.
+            *folder = default.clone().unwrap_or_default();
+        }
         if self.platform.is_some_and(|p| p.os == Os::Linux) {
             ui.label(tl!("Custom folders use AppImage on Linux."));
         }
@@ -277,7 +286,7 @@ impl LauncherUi {
         let mut close = false;
         ui.horizontal(|ui| {
             if widgets::button(ui, tl!("Install"), Kind::Primary, 100.0).clicked() {
-                if folder.is_empty() {
+                if folder.trim().is_empty() || default.as_deref() == Some(folder.trim()) {
                     self.settings.install_locations.per_app.remove(id);
                 } else {
                     self.settings.install_locations.per_app.insert(id.to_string(), folder.clone());
@@ -291,7 +300,10 @@ impl LauncherUi {
         close
     }
 
-    pub(crate) fn folder_field(ui: &mut egui::Ui, folder: &mut String, default: Option<&str>, host: &mut dyn Host) {
+    /// The folder field with Browse and "Use default". "Use default" empties the field and
+    /// returns `true`, so a caller that shows the default as text can put it back.
+    pub(crate) fn folder_field(ui: &mut egui::Ui, folder: &mut String, default: Option<&str>, host: &mut dyn Host) -> bool {
+        let mut use_default = false;
         let label = ui.label(tl!("Install folder"));
         ui.add(
             egui::TextEdit::singleline(folder)
@@ -309,7 +321,9 @@ impl LauncherUi {
             }
             if widgets::button(ui, tl!("Use default"), Kind::Secondary, 120.0).clicked() {
                 folder.clear();
+                use_default = true;
             }
         });
+        use_default
     }
 }

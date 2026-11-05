@@ -565,7 +565,11 @@ fn a_fresh_install_confirms_the_folder_and_configures_before_installing() {
     h.run_steps(3);
     h.get_by_label("Install").click();
     h.run_steps(3);
+    // The field opens with the folder the install would use anyway, as text that can be edited.
+    assert_eq!(h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Install folder").value().as_deref(), Some("/Volumes/Craft Apps"));
     h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Install folder").click();
+    h.run_steps(1);
+    h.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::A);
     h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Install folder").type_text("/Volumes/Typed Photo");
     h.run_steps(3);
     h.get_by_label("Browse…").click();
@@ -679,12 +683,25 @@ fn the_install_folder_fields_default_to_the_hosts_answer() {
     h.get_by_label("Browse…").click();
     h.run_steps(3);
     assert_eq!(initial.borrow().as_ref(), Some(&Some("/Applications".into())));
+    assert_eq!(h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Install folder").value().as_deref(), Some("/Applications"));
+    h.get_by_label("Cancel").click();
+    h.run_steps(3);
     h.state_mut().as_mut().unwrap().settings.install_locations.root = Some("/Volumes/Craft Apps".into());
+    h.run_steps(3);
+    h.get_by_label("Install").click();
     h.run_steps(3);
     h.get_by_label("Browse…").click();
     h.run_steps(3);
     assert_eq!(initial.borrow().as_ref(), Some(&Some("/Volumes/Craft Apps".into())));
+    assert_eq!(h.get_by_role_and_label(egui::accesskit::Role::TextInput, "Install folder").value().as_deref(), Some("/Volumes/Craft Apps"));
     h.check_accessibility();
+    // Installing with the default left as it is saves no folder for the app, so it keeps
+    // following the default.
+    sent.borrow_mut().clear();
+    h.get_all_by_role_and_label(egui::accesskit::Role::Button, "Install").last().unwrap().click();
+    h.run_steps(2);
+    assert!(h.state().as_ref().unwrap().settings.install_locations.per_app.is_empty());
+    assert!(sent.borrow().contains(&Command::Install { app: "photocraft".into() }));
 }
 
 /// A host whose default folder names the package it was asked about (`Msi X86`), and answers

@@ -123,6 +123,9 @@ pub(crate) enum Dialog {
     Install {
         app: String,
         folder: String,
+        /// The field holds the app's saved folder or has been given the default once, so it is
+        /// no longer filled in by itself: a person can clear it without it filling up again.
+        filled: bool,
     },
     Replace {
         app: String,
@@ -499,8 +502,8 @@ impl LauncherUi {
             self.act_command(Command::Install { app: id.to_string() });
             return;
         }
-        self.dialog =
-            Some(Dialog::Install { app: id.to_string(), folder: self.settings.install_locations.per_app.get(id).cloned().unwrap_or_default() });
+        let saved = self.settings.install_locations.per_app.get(id).cloned();
+        self.dialog = Some(Dialog::Install { app: id.to_string(), filled: saved.is_some(), folder: saved.unwrap_or_default() });
     }
 
     /// Non-drawing work: runs every frame and also while the window is hidden in the tray.
