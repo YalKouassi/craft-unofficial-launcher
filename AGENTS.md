@@ -155,6 +155,12 @@ The version lives only in `[workspace.package] version` in the root `Cargo.toml`
 named `craft-unofficial-launcher-<ver>-<os>-<arch>[-portable].<ext>` with `SHA256SUMS.txt`, the same
 contract the launcher asks of the apps. The launcher's self-update relies on these names.
 
+To cut a release, run `cargo xtask version set X.Y.Z`, commit `Cargo.toml` and `Cargo.lock` as
+"Version X.Y.Z", push `main`, then push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+`.github/workflows/release.yml` builds every platform and drafts the release, then checks it against
+the contract. It still drafts the release when only the macOS build is missing, and it builds
+Windows unsigned when the signing secrets aren't set. Publish the draft by hand.
+
 ## 5. Parallel agents
 
 - Use your own target dir (`CARGO_TARGET_DIR=target/agent-<name>`) and edit only the files you own.

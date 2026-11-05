@@ -1,8 +1,12 @@
 name: Release
 
+# A release starts from a version tag: `cargo xtask version set X.Y.Z`, commit, push, then
+# `git tag vX.Y.Z && git push origin vX.Y.Z`. Not from a push to the release branch: on that branch
+# the shared workflow fails the Windows and macOS builds outright when the signing secrets are
+# missing. From a tag they build signed when the secrets are set and unsigned when they aren't.
 on:
   push:
-    branches: [release]
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       version:
@@ -21,6 +25,8 @@ concurrency:
 
 jobs:
   release:
+    needs: tag
+    if: ${{ !cancelled() && needs.tag.result != 'failure' }}
     # Intentionally tracked at @main (not SHA-pinned) so org-wide CI improvements, security fixes, and build optimizations propagate without PR churn across all craftapp repos.
     uses: storytold/craft-common-actions/.github/workflows/release.yml@main
     with:
@@ -47,26 +53,73 @@ jobs:
       AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
       AZURE_CERT_PROFILE: ${{ secrets.AZURE_CERT_PROFILE }}
 
-  # The launcher updates itself through the same release contract it asks of the apps
-  # (docs/craft-app-spec.md): the release must carry craft-app.json, its icon and a SHA256SUMS.txt
-  # that lists every package. Attach them to the draft, then check the whole release before anyone
-  # publishes it.
+  # The tag must name the version in Cargo.toml, or the release would be drafted under another tag.
+  tag:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - name: Check the tag against Cargo.toml
+        run: |
+          VERSION="$(cargo xtask version)"
+          if [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match the version in Cargo.toml ($VERSION). Run cargo xtask version set first."
+            exit 1
+          fi
+
+  # The shared workflow drafts the release only when every build succeeded, and the macOS build
+  # can't run on this account at the moment. So this job drafts it from whatever built, as long as
+  # every Windows, Linux and web package is there (macOS is added when it built). The launcher
+  # updates itself through the same release contract it asks of the apps (docs/craft-app-spec.md):
+  # the release carries craft-app.json, its icon and a SHA256SUMS.txt that lists every package.
+  # The whole release is checked before the draft is made; publishing it stays a manual step.
   contract:
-    needs: release
+    needs: [tag, release]
+    if: ${{ !cancelled() && needs.tag.result != 'failure' }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
       VERSION_OVERRIDE: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
-      - name: Fetch the draft's assets
+      - name: Read the version
         run: |
           VERSION="${VERSION_OVERRIDE:-$(cargo xtask version)}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "TAG=v$VERSION" >> "$GITHUB_ENV"
-          mkdir dist
-          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --dir dist
-      - name: Add craft-app.json and the icon, and list them in SHA256SUMS.txt
+      - name: Download the packages this run built
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Require every Windows, Linux and web package
+        run: |
+          stem="craft-unofficial-launcher-$VERSION"
+          missing=""
+          for arch in x64 arm64 x86; do
+            for f in "$stem-windows-$arch.msi" "$stem-windows-$arch-portable.zip"; do
+              [ -f "dist/$f" ] || missing="$missing $f"
+            done
+          done
+          for arch in x86_64 aarch64; do
+            for ext in AppImage AppImage.zsync deb rpm tar.gz flatpak pkg.tar.zst; do
+              [ -f "dist/$stem-linux-$arch.$ext" ] || missing="$missing $stem-linux-$arch.$ext"
+            done
+          done
+          for ext in deb rpm tar.gz; do
+            [ -f "dist/$stem-linux-riscv64.$ext" ] || missing="$missing $stem-linux-riscv64.$ext"
+          done
+          [ -f "dist/craft-unofficial-launcher-web-$VERSION.zip" ] || missing="$missing craft-unofficial-launcher-web-$VERSION.zip"
+          if [ -n "$missing" ]; then
+            echo "::error::These builds failed or were skipped, so no release is drafted:$missing"
+            exit 1
+          fi
+          compgen -G 'dist/*-macos-*' > /dev/null || echo "::warning::No macOS build; the release is drafted without one."
+      - name: Add craft-app.json and the icon, and list everything in SHA256SUMS.txt
         run: |
           cp craft-app.json dist/craft-app.json
           cp assets/app-icon/hicolor/128x128/apps/io.github.yalkouassi.craft-unofficial-launcher.png dist/craft-unofficial-launcher-128.png
@@ -75,5 +128,22 @@ jobs:
           sha256sum -- * > SHA256SUMS.txt
       - name: Check the release contract
         run: cargo run -p craft-release-check -- dir dist --repo YalKouassi/craft-unofficial-launcher --tag "$TAG"
-      - name: Attach them to the draft
-        run: gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber dist/craft-app.json dist/craft-unofficial-launcher-128.png dist/SHA256SUMS.txt
+      - name: Create or update the draft
+        working-directory: dist
+        run: |
+          title="Craft Unofficial Launcher $TAG"
+          pre=()
+          case "$VERSION" in *-*) pre=(--prerelease) ;; esac
+          if draft="$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null)"; then
+            if [ "$draft" != "true" ]; then
+              echo "::error::Release $TAG is already published. Bump the version (cargo xtask version set) and tag again."
+              exit 1
+            fi
+            gh release view "$TAG" --json assets --jq '.assets[].name' | while read -r asset; do
+              gh release delete-asset "$TAG" "$asset" --yes
+            done
+            gh release edit "$TAG" --draft --title "$title" --target "$GITHUB_SHA"
+            gh release upload "$TAG" --clobber -- *
+          else
+            gh release create "$TAG" --draft --title "$title" --target "$GITHUB_SHA" --generate-notes "${pre[@]}" -- *
+          fi
