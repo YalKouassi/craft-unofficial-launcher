@@ -288,7 +288,11 @@ fn release_from_value(v: &serde_json::Value, source: &str) -> Result<Release, St
 
 /// A release known only from its tag and `SHA256SUMS.txt` (the quota-free route: the
 /// `releases/latest` redirect names the tag, and the sums list every file).
-pub fn release_from_sums(repo: &str, tag: &str, sums: &[(String, String)]) -> Release {
+/// `source` is a source key: in a shared release repo the version is what follows `<app>-`.
+pub fn release_from_sums(source: &str, tag: &str, sums: &[(String, String)]) -> Release {
+    let parsed = craft_app_descriptor::Source::parse(source);
+    let repo = parsed.map_or(source, |s| s.repo);
+    let version_tag = parsed.and_then(|s| s.version_tag(tag)).unwrap_or(tag);
     let prefix = download_prefix(repo);
     let mut assets: Vec<Asset> = sums
         .iter()
@@ -297,7 +301,7 @@ pub fn release_from_sums(repo: &str, tag: &str, sums: &[(String, String)]) -> Re
     assets.push(Asset { name: "SHA256SUMS.txt".into(), size: 0, url: format!("{prefix}{tag}/SHA256SUMS.txt"), sha256: None });
     Release {
         tag: tag.to_string(),
-        version: version::parse(tag),
+        version: version::parse(version_tag),
         name: tag.to_string(),
         published_at: None,
         html_url: format!("https://github.com/{repo}/releases/tag/{tag}"),
@@ -572,6 +576,10 @@ mod tests {
         let r = release_from_sums(REPO, "v0.5.0", &sums);
         assert_eq!(r.assets[0].url, "https://github.com/storytold/photocraft/releases/download/v0.5.0/photocraft-0.5.0-macos-universal.dmg");
         assert_eq!(r.version, Some(Version::new(0, 5, 0)));
+        let shared = release_from_sums("org/bridges#mailcraft", "mailcraft-v0.10.0", &sums);
+        assert_eq!(shared.assets[1].url, "https://github.com/org/bridges/releases/download/mailcraft-v0.10.0/b.zip");
+        assert_eq!(shared.html_url, "https://github.com/org/bridges/releases/tag/mailcraft-v0.10.0");
+        assert_eq!(shared.version, Some(Version::new(0, 10, 0)));
     }
 
     #[test]

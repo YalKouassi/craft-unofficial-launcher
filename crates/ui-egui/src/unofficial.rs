@@ -12,7 +12,7 @@ use crate::theme::{self, Tokens};
 use crate::widgets::{self, Kind};
 
 /// What an app's own releases need so anyone can add it by its repository (the public guide).
-const JOINING_URL: &str = "https://github.com/YalKouassi/craft-bridge/blob/main/JOINING.md";
+const JOINING_URL: &str = "https://github.com/YalKouassi/craft-bridges/blob/main/JOINING.md";
 
 /// The Add app dialog's state, kept while the launcher runs so a long error list survives
 /// closing and reopening it.
