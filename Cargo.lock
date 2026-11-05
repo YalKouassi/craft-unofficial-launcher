@@ -272,7 +272,7 @@ checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
 
 [[package]]
 name = "artcraft-launcher"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "artcraft-launcher-core",
  "artcraft-launcher-native",
@@ -298,7 +298,7 @@ dependencies = [
 
 [[package]]
 name = "artcraft-launcher-core"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "craft-app-descriptor",
  "jiff",
@@ -309,7 +309,7 @@ dependencies = [
 
 [[package]]
 name = "artcraft-launcher-native"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "artcraft-launcher-core",
  "craft-app-descriptor",
@@ -334,7 +334,7 @@ dependencies = [
 
 [[package]]
 name = "artcraft-launcher-ui-egui"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "artcraft-launcher-core",
  "craft-app-descriptor",
@@ -355,7 +355,7 @@ dependencies = [
 
 [[package]]
 name = "artcraft-launcher-web"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "artcraft-launcher-core",
  "artcraft-launcher-ui-egui",
@@ -967,7 +967,7 @@ dependencies = [
 
 [[package]]
 name = "craft-app-descriptor"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "semver",
  "serde",
@@ -1015,7 +1015,7 @@ dependencies = [
 
 [[package]]
 name = "craft-release-check"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "craft-app-descriptor",
  "serde",
@@ -1047,7 +1047,7 @@ dependencies = [
 
 [[package]]
 name = "craft-unofficial-update"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "chrono",
  "craft-app-descriptor",
@@ -6253,7 +6253,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "craft-app-descriptor",
  "jiff",
