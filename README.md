@@ -80,7 +80,7 @@ crates/core           launcher core            the runtime catalog, versions, re
 crates/native         launcher backend         HTTP, the app registry, detection, install
 crates/ui-egui        launcher UI              egui, desktop and web
 apps/                 desktop and web shells
-index/apps.json       the community index (repo names only; listing vouches for nothing)
+index/apps.json       the community index (repo names and categories; listing vouches for nothing)
 ```
 
 ## Build from source

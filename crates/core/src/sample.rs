@@ -36,6 +36,7 @@ const fn app(
         apple_team: Some("DJ6XS33FX8"),
         upstream: None,
         icon_png: Some(ICON),
+        category: None,
     }
 }
 

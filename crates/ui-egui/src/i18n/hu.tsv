@@ -389,3 +389,18 @@ column	Author	Szerző
 	Try playground	Playground kipróbálása
 	Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL.	Van egy repód? Kövesd ezeket az irányelveket, és bárki hozzáadhatja itt az alkalmazásodat a GitHub URL-jével.
 	Guidelines for app authors	Irányelvek alkalmazásszerzőknek
+# Grouping and filtering the app list.
+	Other	Egyéb
+	Group	Csoportosítás
+	Installed first	Telepítettek elöl
+	By category	Kategória szerint
+	No grouping	Nincs csoportosítás
+	Show every app	Minden app megjelenítése
+	Show only {category}	Csak ez: {category}
+	Graphics	Grafika
+	Audio & video	Hang és videó
+	3D & CAD	3D és CAD
+	Maps & GIS	Térképek és GIS
+	Productivity	Produktivitás
+	Developer tools	Fejlesztői eszközök
+	Utilities	Segédprogramok

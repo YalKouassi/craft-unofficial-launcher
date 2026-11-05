@@ -9,10 +9,10 @@ use artcraft_launcher_core::status::AppStatus;
 use artcraft_launcher_core::time;
 use egui::{Color32, CornerRadius, FontId, Rect, RichText, Sense, Stroke, Ui, vec2};
 
-use crate::app::{Dialog, LauncherUi, TitleBar};
+use crate::app::{Dialog, Group, LauncherUi, TitleBar, category_heading};
 use crate::i18n::{current, fmt, t, tn, tr_ctx};
 use crate::model::{self, AppEntry};
-use crate::settings::{Filter, SortKey, ViewMode};
+use crate::settings::{Filter, GroupBy, SortKey, ViewMode};
 use crate::theme::{self, Tokens, rgb, tint};
 use crate::widgets::{self, Kind};
 
@@ -144,6 +144,75 @@ impl LauncherUi {
         if compact {
             self.toolbar_compact_row(ui, &t, updates);
         }
+        if !self.entries.is_empty() {
+            self.filter_row(ui, &t);
+        }
+    }
+
+    /// The row under the toolbar: a cell per category the list holds (with its count, after the
+    /// search) that narrows the list to it, and the grouping picker at the right. The cells show
+    /// only while there is more than one category to choose between, or one is chosen.
+    fn filter_row(&mut self, ui: &mut Ui, t: &Tokens) {
+        type Pick = Option<Option<craft_app_descriptor::Category>>;
+        let searched = self.searched();
+        let mut buckets: Vec<(Pick, usize)> = vec![(None, searched.len())];
+        for c in craft_app_descriptor::Category::ALL.into_iter().map(Some).chain([None]) {
+            let n = searched.iter().filter(|(_, e)| e.app.category == c).count();
+            if n > 0 || self.category_filter == Some(c) {
+                buckets.push((Some(c), n));
+            }
+        }
+        let show_cells = buckets.len() > 2 || self.category_filter.is_some();
+        let labels: Vec<(String, String)> = buckets
+            .iter()
+            .map(|(b, _)| match b {
+                None => (tl!("All").to_string(), tl!("Show every app").to_string()),
+                Some(c) => {
+                    let name = category_heading(*c);
+                    let tip = fmt(tl!("Show only {category}"), &[("category", &name)]);
+                    (name, tip)
+                }
+            })
+            .collect();
+        ui.add_space(10.0);
+        ui.horizontal(|ui| {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                self.group_picker(ui);
+                widgets::hud(ui, tl!("Group"), t.faint);
+                ui.add_space(12.0);
+                if show_cells {
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Min).with_main_wrap(true), |ui| {
+                        ui.spacing_mut().item_spacing.y = 6.0;
+                        let options: Vec<(Pick, widgets::Cell<'_>)> = buckets
+                            .iter()
+                            .zip(&labels)
+                            .map(|((b, n), (label, tip))| (*b, widgets::Cell { label, tip, count: Some((*n, None)) }))
+                            .collect();
+                        let mut pick = self.category_filter;
+                        if widgets::cells_apart(ui, &mut pick, &options, 6.0) {
+                            self.category_filter = pick;
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    /// How the list is grouped: by category, or as each view does without (installed first in
+    /// the grid, the column's order in the table).
+    fn group_picker(&mut self, ui: &mut Ui) {
+        craft_ui::ComboBox::from_id_salt("group")
+            .selected_text(RichText::new(group_label(self.settings.group, self.settings.view)).size(13.0))
+            .width(170.0)
+            .show_ui(ui, |ui| {
+                for choice in [GroupBy::Status, GroupBy::Category] {
+                    if ui.selectable_label(self.settings.group == choice, group_label(choice, self.settings.view)).clicked() {
+                        self.settings.group = choice;
+                    }
+                }
+            })
+            .response
+            .accessible_name(tl!("Group"));
     }
 
     /// A banner over the toolbar when a newer Craft Unofficial Launcher release is known: either the
@@ -414,18 +483,19 @@ impl LauncherUi {
 
     // ---- grid ----------------------------------------------------------------------------
 
-    /// Installed apps first (`ids` arrives that way), then the rest under a "Not installed" header.
-    pub(crate) fn grid(&mut self, ui: &mut Ui, ids: &[&'static str]) {
-        let installed = ids.iter().take_while(|id| self.is_installed(id)).count();
-        let (top, rest) = ids.split_at(installed);
-        self.grid_block(ui, top);
-        if !top.is_empty() && !rest.is_empty() {
-            let t = Tokens::get(ui.ctx());
-            ui.add_space(28.0);
-            widgets::hud(ui, tl!("Not installed"), t.faint);
-            ui.add_space(12.0);
+    /// Each group's cards under its heading (see [`LauncherUi::visible_groups`]).
+    pub(crate) fn grid(&mut self, ui: &mut Ui, groups: &[Group]) {
+        let t = Tokens::get(ui.ctx());
+        for (i, group) in groups.iter().enumerate() {
+            if i > 0 {
+                ui.add_space(28.0);
+            }
+            if let Some(heading) = &group.heading {
+                group_heading(ui, heading, group.ids.len(), &t);
+                ui.add_space(12.0);
+            }
+            self.grid_block(ui, &group.ids);
         }
-        self.grid_block(ui, rest);
         ui.add_space(24.0);
     }
 
@@ -575,7 +645,7 @@ impl LauncherUi {
 
     // ---- table ---------------------------------------------------------------------------
 
-    pub(crate) fn table(&mut self, ui: &mut Ui, ids: &[&'static str]) {
+    pub(crate) fn table(&mut self, ui: &mut Ui, groups: &[Group]) {
         use egui_extras::{Column, TableBuilder};
         let t = Tokens::get(ui.ctx());
         let now = self.backend.now();
@@ -600,7 +670,7 @@ impl LauncherUi {
                 .column(Column::exact(120.0))
                 .column(Column::exact(206.0))
                 .header(42.0, |header| self.table_header(header, &mut sort_clicked, &t, span, clip))
-                .body(|body| self.table_rows(body, ids, &t, (title_h, tagline_h), now, (span, clip)));
+                .body(|body| self.table_rows(body, groups, &t, (title_h, tagline_h), now, (span, clip)));
         });
         if let Some(k) = sort_clicked {
             if self.settings.sort == k {
@@ -665,8 +735,7 @@ impl LauncherUi {
         if resp.on_hover_text(tip).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() { Some(k) } else { None }
     }
 
-    /// The header row: the four sortable column labels with their arrows, and the two that are
-    /// plain.
+    /// The header row: the five sortable column labels with their arrows, and the actions column.
     fn table_header(
         &self,
         mut header: egui_extras::TableRow<'_, '_>,
@@ -678,9 +747,9 @@ impl LauncherUi {
         for (key, label) in [
             (Some(SortKey::Name), tl!("App")),
             (Some(SortKey::Status), tl!("Status")),
-            (None, tr_ctx(current(), "column", "Version")),
+            (Some(SortKey::Latest), tr_ctx(current(), "column", "Version")),
             (Some(SortKey::Released), tr_ctx(current(), "column", "Released")),
-            (None, tr_ctx(current(), "column", "Author")),
+            (Some(SortKey::Publisher), tr_ctx(current(), "column", "Author")),
             (None, ""),
         ] {
             header.col(|ui| {
@@ -695,18 +764,38 @@ impl LauncherUi {
     }
 
     /// The table's one row per app: the app (click to open its page), its status, the version,
-    /// when it was released, who makes it, and its actions.
+    /// when it was released, who makes it, and its actions. A group's heading takes a row of its
+    /// own above the group's apps.
     fn table_rows(
         &mut self,
         mut body: egui_extras::TableBody<'_>,
-        ids: &[&'static str],
+        groups: &[Group],
         t: &Tokens,
         fonts: (f32, f32),
         now: i64,
         rule: (egui::emath::Rangef, egui::Rect),
     ) {
-        let last = ids.len().saturating_sub(1);
-        for (i, id) in ids.iter().enumerate() {
+        let rows: Vec<Result<&'static str, (&str, usize)>> = groups
+            .iter()
+            .flat_map(|g| g.heading.as_deref().map(|h| Err((h, g.ids.len()))).into_iter().chain(g.ids.iter().map(|id| Ok(*id))))
+            .collect();
+        let last = rows.len().saturating_sub(1);
+        for (i, row) in rows.into_iter().enumerate() {
+            let id = match row {
+                Ok(id) => id,
+                Err((heading, count)) => {
+                    body.row(40.0, |mut row| {
+                        row.col(|ui| {
+                            Self::table_rule(ui, t, rule.0, rule.1);
+                            group_heading(ui, heading, count, t);
+                        });
+                        for _ in 0..5 {
+                            row.col(|_| {});
+                        }
+                    });
+                    continue;
+                }
+            };
             let Some(entry) = self.entry(id).cloned() else { continue };
             let status = entry.status(self.platform, self.caps.manage_apps);
             body.row(62.0, |mut row| {
@@ -1151,6 +1240,22 @@ pub(crate) fn grid_sort_now(s: &crate::settings::Settings) -> (SortKey, bool) {
         SortKey::Frequent => (SortKey::Frequent, true),
         _ => (SortKey::Name, false),
     }
+}
+
+fn group_label(group: GroupBy, view: ViewMode) -> &'static str {
+    match (group, view) {
+        (GroupBy::Category, _) => tl!("By category"),
+        (GroupBy::Status, ViewMode::Grid) => tl!("Installed first"),
+        (GroupBy::Status, ViewMode::Table) => tl!("No grouping"),
+    }
+}
+
+/// A group's heading over its cards or table rows: the name, and how many apps follow.
+fn group_heading(ui: &mut Ui, heading: &str, count: usize, t: &Tokens) {
+    ui.horizontal(|ui| {
+        widgets::hud(ui, heading, t.muted);
+        widgets::hud(ui, &count.to_string(), t.faint);
+    });
 }
 
 fn grid_sort_label((key, descending): (SortKey, bool)) -> &'static str {

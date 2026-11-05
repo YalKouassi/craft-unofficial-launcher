@@ -66,6 +66,8 @@ pub struct CraftApp {
     pub upstream: Option<&'static str>,
     /// Its icon (PNG, checked with `craft_app_descriptor::check_icon`).
     pub icon_png: Option<&'static [u8]>,
+    /// The heading the app index files it under. `None`: none (an app added by hand, for one).
+    pub category: Option<craft_app_descriptor::Category>,
 }
 
 impl CraftApp {
@@ -160,6 +162,7 @@ impl CraftApp {
             apple_team: d.apple_team.as_deref().map(leak),
             upstream: d.upstream.as_deref().map(leak),
             icon_png: icon.filter(|i| craft_app_descriptor::check_icon(i).is_ok()).map(|i| &*Box::leak(i.to_vec().into_boxed_slice())),
+            category: None,
         };
         interned.insert(key, app);
         app
@@ -233,6 +236,7 @@ pub const LAUNCHER: CraftApp = CraftApp {
     apple_team: None,
     upstream: None,
     icon_png: None,
+    category: None,
 };
 
 /// The launcher's own repo, checked so it can say when a newer launcher is out.

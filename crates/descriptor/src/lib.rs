@@ -10,12 +10,14 @@
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+pub mod category;
 pub mod contract;
 pub mod descriptor;
 pub mod index;
 pub mod reserved;
 pub mod source;
 
+pub use category::Category;
 pub use contract::{Report, check_release};
 pub use descriptor::{Descriptor, Problems};
 pub use index::{Index, IndexEntry};

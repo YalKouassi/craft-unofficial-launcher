@@ -12,7 +12,7 @@ use artcraft_launcher_core::{Arch, PackageKind, Platform};
 use crate::i18n::set_current;
 use crate::model::AppEntry;
 use crate::motion;
-use crate::settings::{Filter, Settings, SortKey, ViewMode};
+use crate::settings::{Filter, GroupBy, Settings, SortKey, ViewMode};
 use crate::theme::{self, Tokens};
 
 /// Who draws the window's title bar.
@@ -70,6 +70,19 @@ pub trait Host {
     }
     /// Quit the launcher for real (not just hide to the tray).
     fn quit(&mut self) {}
+}
+
+/// A run of apps in the list, under its heading (none for the installed apps that open the
+/// "installed first" grouping, or when the list isn't grouped).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Group {
+    pub(crate) heading: Option<String>,
+    pub(crate) ids: Vec<&'static str>,
+}
+
+/// A category's heading in the user's language; "Other" for apps filed under none.
+pub(crate) fn category_heading(c: Option<craft_app_descriptor::Category>) -> String {
+    c.map_or_else(|| crate::i18n::t("Other").to_string(), |c| crate::i18n::t(c.label()).to_string())
 }
 
 pub(crate) struct Toast {
@@ -163,6 +176,10 @@ pub struct LauncherUi {
     /// Alerts from the feed, shown as popups until acknowledged.
     pub(crate) alerts: Vec<artcraft_launcher_core::feed::Notice>,
     pub(crate) search: String,
+    /// The category the list is narrowed to: `None` shows every app, `Some(None)` the apps the
+    /// index files under no heading. Only for this session: a narrowed list left over from last
+    /// time would look like missing apps.
+    pub(crate) category_filter: Option<Option<craft_app_descriptor::Category>>,
     pub(crate) toasts: Vec<Toast>,
     pub(crate) dialog: Option<Dialog>,
     /// Release-note text scale for this session, independent of the main UI zoom.
@@ -268,6 +285,7 @@ impl LauncherUi {
             announcements: Vec::new(),
             alerts: Vec::new(),
             search: String::new(),
+            category_filter: None,
             toasts: Vec::new(),
             dialog: None,
             notes_zoom: 1.0,
@@ -842,7 +860,7 @@ impl LauncherUi {
             .show(ui, |ui| {
                 self.toolbar(ui);
                 ui.add_space(18.0);
-                let ids = self.visible_ids();
+                let groups = self.visible_groups();
                 // The table is wider than a narrow window: let it scroll sideways too.
                 let scroll = match self.settings.view {
                     ViewMode::Grid => egui::ScrollArea::vertical(),
@@ -851,15 +869,15 @@ impl LauncherUi {
                 scroll.auto_shrink(false).show(ui, |ui| {
                     if self.entries.is_empty() {
                         self.empty_catalog(ui);
-                    } else if ids.is_empty() {
+                    } else if groups.is_empty() {
                         ui.add_space(40.0);
                         ui.vertical_centered(|ui| {
                             crate::widgets::hud(ui, tl!("No apps match"), tokens.muted);
                         });
                     } else {
                         match self.settings.view {
-                            ViewMode::Grid => self.grid(ui, &ids),
-                            ViewMode::Table => self.table(ui, &ids),
+                            ViewMode::Grid => self.grid(ui, &groups),
+                            ViewMode::Table => self.table(ui, &groups),
                         }
                     }
                     ui.add_space(16.0);
@@ -874,18 +892,35 @@ impl LauncherUi {
         }
     }
 
-    /// The ids to show, filtered and sorted.
+    /// The ids to show, filtered and sorted, in the order the groups show them.
     pub(crate) fn visible_ids(&self) -> Vec<&'static str> {
+        self.visible_groups().into_iter().flat_map(|g| g.ids).collect()
+    }
+
+    /// Whether `entry` matches `needle` (lower case): its name, tagline, publisher or category
+    /// heading. An empty needle matches everything.
+    fn matches_search(entry: &AppEntry, needle: &str) -> bool {
+        if needle.is_empty() {
+            return true;
+        }
+        let app = entry.app;
+        let category = app.category.map(|c| crate::i18n::t(c.label()).to_lowercase());
+        [app.name, app.tagline, app.publisher].iter().any(|f| f.to_lowercase().contains(needle)) || category.is_some_and(|c| c.contains(needle))
+    }
+
+    /// The entries the list and the search let through, before the category filter: what the
+    /// category cells count.
+    /// Each comes with its place in the list (suite order).
+    pub(crate) fn searched(&self) -> Vec<(usize, &AppEntry)> {
         let needle = self.search.trim().to_lowercase();
-        let mut list: Vec<(usize, &AppEntry)> = self
-            .entries
-            .iter()
-            .enumerate()
-            .filter(|(_, e)| {
-                self.in_filter(e, self.settings.filter)
-                    && (needle.is_empty() || e.app.name.to_lowercase().contains(&needle) || e.app.tagline.to_lowercase().contains(&needle))
-            })
-            .collect();
+        self.entries.iter().enumerate().filter(|(_, e)| self.in_filter(e, self.settings.filter) && Self::matches_search(e, &needle)).collect()
+    }
+
+    /// The apps to show, filtered, sorted, and split into the headed groups `settings.group` asks
+    /// for. Empty groups are left out.
+    pub(crate) fn visible_groups(&self) -> Vec<Group> {
+        let mut list: Vec<(usize, &AppEntry)> =
+            self.searched().into_iter().filter(|(_, e)| self.category_filter.is_none_or(|c| e.app.category == c)).collect();
         let platform = self.platform;
         let manage = self.caps.manage_apps;
         // The grid offers its own few orders (`views::grid_sort_now`); the table sorts by its columns.
@@ -904,7 +939,8 @@ impl LauncherUi {
         list.sort_by(|(ia, a), (ib, b)| {
             let ord = match sort {
                 SortKey::Suite => dir(ia.cmp(ib)),
-                SortKey::Name => dir(a.app.name.cmp(b.app.name)),
+                SortKey::Name => dir(a.app.name.to_lowercase().cmp(&b.app.name.to_lowercase())),
+                SortKey::Publisher => dir(a.app.publisher.to_lowercase().cmp(&b.app.publisher.to_lowercase())),
                 SortKey::Status => {
                     dir(crate::model::status_rank(&a.status(platform, manage)).cmp(&crate::model::status_rank(&b.status(platform, manage))))
                 }
@@ -929,22 +965,31 @@ impl LauncherUi {
             // Ties keep suite order.
             ord.then(ia.cmp(ib))
         });
-        // The grid shows installed apps first, then the rest under "Not installed" (the sort holds
-        // within each group; the sort is stable). The table keeps the order its column gives.
-        if grid {
-            list.sort_by_key(|(_, e)| !e.status(platform, manage).is_installed());
-        }
-        list.into_iter().map(|(_, e)| e.app.id).collect()
+        // The sort holds within each group.
+        let ids = |keep: &dyn Fn(&AppEntry) -> bool| -> Vec<&'static str> { list.iter().filter(|(_, e)| keep(e)).map(|(_, e)| e.app.id).collect() };
+        let groups = match self.settings.group {
+            // The table keeps its column's order; only the grid puts installed apps first.
+            GroupBy::Status if !grid => vec![Group { heading: None, ids: ids(&|_| true) }],
+            GroupBy::Status => {
+                let installed = ids(&|e| e.status(platform, manage).is_installed());
+                let rest = ids(&|e| !e.status(platform, manage).is_installed());
+                // "Not installed" is said only when something installed comes before it.
+                let heading = (!installed.is_empty()).then(|| crate::i18n::t("Not installed").to_string());
+                vec![Group { heading: None, ids: installed }, Group { heading, ids: rest }]
+            }
+            GroupBy::Category => craft_app_descriptor::Category::ALL
+                .into_iter()
+                .map(Some)
+                .chain([None])
+                .map(|c| Group { heading: Some(category_heading(c)), ids: ids(&|e| e.app.category == c) })
+                .collect(),
+        };
+        groups.into_iter().filter(|g| !g.ids.is_empty()).collect()
     }
 
     /// Opens an app, and counts it for "Frequently used".
     pub(crate) fn launch_app(&mut self, id: &str) {
         self.act(UiAction::Launch(id.to_string()));
-    }
-
-    /// Whether the app on screen under `id` is installed on this computer.
-    pub(crate) fn is_installed(&self, id: &str) -> bool {
-        self.entry(id).is_some_and(|e| e.status(self.platform, self.caps.manage_apps).is_installed())
     }
 
     /// "release feed", "GitHub" or "release feed and GitHub": the services behind the releases on
@@ -1102,6 +1147,69 @@ mod tests {
         let mut output = ctx.run_ui(input, |ui| launcher.ui(ui, &mut NoHost));
         // This logic-only harness has no renderer to receive texture uploads.
         output.textures_delta.clear();
+    }
+
+    /// Replaces the launcher's apps with copies of the first sample apps, filed under `categories`.
+    fn filed(launcher: &mut LauncherUi, categories: &[Option<craft_app_descriptor::Category>]) -> Vec<&'static str> {
+        let apps = artcraft_launcher_core::apps();
+        launcher.entries = apps
+            .iter()
+            .zip(categories)
+            .map(|(app, c)| AppEntry::new(Box::leak(Box::new(artcraft_launcher_core::CraftApp { category: *c, ..*app }))))
+            .collect();
+        launcher.entries.iter().map(|e| e.app.id).collect()
+    }
+
+    #[test]
+    fn grouping_by_category_follows_the_category_order_and_ends_with_other() {
+        use craft_app_descriptor::Category::{AudioVideo, Graphics};
+        let (mut launcher, _, _) = launcher();
+        let ids = filed(&mut launcher, &[None, Some(AudioVideo), Some(Graphics), Some(AudioVideo)]);
+        launcher.settings.group = GroupBy::Category;
+        launcher.settings.sort = SortKey::Suite;
+        launcher.settings.view = ViewMode::Table;
+        let groups = launcher.visible_groups();
+        let headings: Vec<Option<&str>> = groups.iter().map(|g| g.heading.as_deref()).collect();
+        assert_eq!(headings, [Some("Graphics"), Some("Audio & video"), Some("Other")]);
+        assert_eq!(groups[0].ids, [ids[2]]);
+        assert_eq!(groups[1].ids, [ids[1], ids[3]]);
+        assert_eq!(groups[2].ids, [ids[0]]);
+        assert_eq!(launcher.visible_ids(), [ids[2], ids[1], ids[3], ids[0]], "the flat order is the groups' order");
+        // The table without category groups: one list. The grid with nothing installed: the same.
+        launcher.settings.group = GroupBy::Status;
+        assert_eq!(launcher.visible_groups(), [Group { heading: None, ids: ids.clone() }]);
+        launcher.settings.view = ViewMode::Grid;
+        assert_eq!(launcher.visible_groups().len(), 1);
+        assert_eq!(launcher.visible_groups()[0].heading, None);
+    }
+
+    #[test]
+    fn the_category_filter_narrows_the_list_and_other_means_no_category() {
+        use craft_app_descriptor::Category::Graphics;
+        let (mut launcher, _, _) = launcher();
+        let ids = filed(&mut launcher, &[None, Some(Graphics), Some(Graphics)]);
+        launcher.category_filter = Some(Some(Graphics));
+        assert_eq!(launcher.visible_ids().len(), 2);
+        assert!(!launcher.visible_ids().contains(&ids[0]));
+        launcher.category_filter = Some(None);
+        assert_eq!(launcher.visible_ids(), [ids[0]]);
+        launcher.category_filter = None;
+        assert_eq!(launcher.visible_ids().len(), 3);
+        // The filter is for this session only: it isn't part of the saved settings.
+        let saved = serde_json::to_string(&launcher.settings).unwrap();
+        assert!(!saved.contains("category"), "{saved}");
+    }
+
+    #[test]
+    fn search_also_matches_the_publisher_and_the_category_heading() {
+        use craft_app_descriptor::Category::Maps;
+        let (mut launcher, _, _) = launcher();
+        let ids = filed(&mut launcher, &[Some(Maps), None]);
+        launcher.search = "maps &".into();
+        assert_eq!(launcher.visible_ids(), [ids[0]]);
+        let publisher = launcher.entries[1].app.publisher.to_uppercase();
+        launcher.search = publisher;
+        assert!(launcher.visible_ids().contains(&ids[1]));
     }
 
     /// Counts the `Install` commands in `sent`, ignoring every other command.

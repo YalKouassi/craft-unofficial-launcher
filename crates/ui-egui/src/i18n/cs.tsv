@@ -360,3 +360,18 @@ column	Author	Autor
 	Try playground	Vyzkoušet playground
 	Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL.	Máte repozitář? Dodržte tyto pokyny a pak kdokoli může vaši aplikaci přidat zadáním její GitHub URL.
 	Guidelines for app authors	Pokyny pro autory aplikací
+# Grouping and filtering the app list.
+	Other	Ostatní
+	Group	Seskupit
+	Installed first	Nejdřív nainstalované
+	By category	Podle kategorie
+	No grouping	Bez seskupení
+	Show every app	Zobrazit všechny aplikace
+	Show only {category}	Zobrazit jen: {category}
+	Graphics	Grafika
+	Audio & video	Zvuk a video
+	3D & CAD	3D a CAD
+	Maps & GIS	Mapy a GIS
+	Productivity	Produktivita
+	Developer tools	Nástroje pro vývojáře
+	Utilities	Nástroje

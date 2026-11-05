@@ -27,6 +27,18 @@ pub enum Filter {
     Hidden,
 }
 
+/// How the list is split into headed groups. Grouping never hides an app, so it is saved.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum GroupBy {
+    /// The grid: installed apps first, then the rest under "Not installed". The table: one list,
+    /// in its column's order.
+    #[default]
+    Status,
+    /// Under the app index's headings (`craft_app_descriptor::Category`), then "Other", in both
+    /// views.
+    Category,
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SortKey {
     /// Suite order: classic apps, then new. Settings saved with the removed "Inspired by" sort load as this.
@@ -43,6 +55,8 @@ pub enum SortKey {
     Released,
     /// How often the app has been opened from here, most first.
     Frequent,
+    /// Who makes it (the descriptor's publisher).
+    Publisher,
 }
 
 impl SortKey {
@@ -92,6 +106,7 @@ pub struct Settings {
     pub filter: Filter,
     pub sort: SortKey,
     pub sort_descending: bool,
+    pub group: GroupBy,
     pub theme: ThemeChoice,
     /// Interface language: `auto` (follow the system) or a language code from the registry
     /// (`en`, `ru`, `zh-CN`, `de`, `fr`, `pt-BR`, `pl`).
@@ -192,6 +207,7 @@ impl Default for Settings {
             filter: Filter::All,
             sort: SortKey::Suite,
             sort_descending: false,
+            group: GroupBy::Status,
             theme: ThemeChoice::System,
             language: "auto".to_string(),
             close_to_tray: true,

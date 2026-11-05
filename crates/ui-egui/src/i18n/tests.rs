@@ -542,6 +542,17 @@ fn complete_catalogs_translate_package_formats() {
     }
 }
 
+/// Category headings come from `craft_app_descriptor::Category::label`, not `tl!` literals, so
+/// the literal scan above can't see them.
+#[test]
+fn every_category_heading_is_translated() {
+    for lang in Lang::all().filter(|l| l.complete_menus()) {
+        for label in craft_app_descriptor::Category::ALL.map(|c| c.label()).into_iter().chain(["Other"]) {
+            assert!(super::has(lang, label), "{}: {label}", lang.code());
+        }
+    }
+}
+
 #[test]
 fn picker_lists_english_first_then_names_alphabetically() {
     let order = Lang::for_picker();

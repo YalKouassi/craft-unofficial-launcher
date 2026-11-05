@@ -2128,6 +2128,7 @@ fn toolbar_keeps_navigation_refresh_search_and_view_on_one_unclipped_row() {
     }
 }
 
+/// The status filters (#678) stay gone: the only drop-downs are the sort and the grouping.
 #[test]
 fn the_toolbar_has_no_filter_dropdown() {
     use artcraft_launcher_ui_egui::settings::Filter;
@@ -2136,8 +2137,10 @@ fn the_toolbar_has_no_filter_dropdown() {
     for label in ["All 13", "Installed 4", "Updates 2", "Not installed 9"] {
         assert!(h.query_by_value(label).is_none() && h.query_by_label(label).is_none(), "{label}");
     }
-    // Only the sort dropdown is left.
-    assert_eq!(h.query_all_by_role(egui::accesskit::Role::ComboBox).count(), 1);
+    // Only the sort and grouping dropdowns are left.
+    assert_eq!(h.query_all_by_role(egui::accesskit::Role::ComboBox).count(), 2);
+    h.get_by_role_and_label(egui::accesskit::Role::ComboBox, "Sort");
+    h.get_by_role_and_label(egui::accesskit::Role::ComboBox, "Group");
     assert_eq!(h.state().as_ref().unwrap().settings.filter, Filter::All);
 }
 

@@ -384,3 +384,18 @@ column	Author	Автор
 	Try playground	Попробовать playground
 	Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL.	Есть репозиторий? Следуйте этим правилам, и любой сможет добавить ваше приложение сюда по его URL на GitHub.
 	Guidelines for app authors	Правила для авторов приложений
+# Grouping and filtering the app list.
+	Other	Другое
+	Group	Группировка
+	Installed first	Сначала установленные
+	By category	По категориям
+	No grouping	Без группировки
+	Show every app	Показать все приложения
+	Show only {category}	Показать только: {category}
+	Graphics	Графика
+	Audio & video	Аудио и видео
+	3D & CAD	3D и САПР
+	Maps & GIS	Карты и ГИС
+	Productivity	Продуктивность
+	Developer tools	Инструменты разработчика
+	Utilities	Утилиты

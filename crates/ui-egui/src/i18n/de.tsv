@@ -388,3 +388,18 @@ column	Author	Autor
 	Try playground	Playground ausprobieren
 	Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL.	Du hast ein Repo? Folge diesen Richtlinien, dann kann jeder deine App hier über ihre GitHub-URL hinzufügen.
 	Guidelines for app authors	Richtlinien für App-Autoren
+# Grouping and filtering the app list.
+	Other	Sonstige
+	Group	Gruppieren
+	Installed first	Installierte zuerst
+	By category	Nach Kategorie
+	No grouping	Keine Gruppen
+	Show every app	Alle Apps anzeigen
+	Show only {category}	Nur {category} anzeigen
+	Graphics	Grafik
+	Audio & video	Audio & Video
+	3D & CAD	3D & CAD
+	Maps & GIS	Karten & GIS
+	Productivity	Produktivität
+	Developer tools	Entwicklerwerkzeuge
+	Utilities	Dienstprogramme

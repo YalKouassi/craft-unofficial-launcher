@@ -80,6 +80,10 @@ pub struct Stored {
     /// so the index doesn't bring it back.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub from_index: bool,
+    /// The heading the app index files it under, refreshed at every index sync. Kept for an app
+    /// added by hand that the index also lists.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub category: Option<craft_app_descriptor::Category>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -150,7 +154,7 @@ impl Registry {
             .iter()
             .map(|s| {
                 let icon = std::fs::read(self.icon_path(&s.descriptor.id)).ok().filter(|b| craft_app_descriptor::check_icon(b).is_ok());
-                CraftApp::from_descriptor_at(&s.descriptor, &s.repo, icon.as_deref())
+                CraftApp { category: s.category, ..CraftApp::from_descriptor_at(&s.descriptor, &s.repo, icon.as_deref()) }
             })
             .collect()
     }
@@ -176,7 +180,7 @@ impl Registry {
 
     /// Adds `repo` because the user asked (Add app). Returns the new app's id.
     pub fn add(&mut self, fetch: &dyn Fetch, repo: &str) -> Result<String, Vec<String>> {
-        let id = self.insert(fetch, repo, false)?;
+        let id = self.insert(fetch, repo, false, None)?;
         if let Some(added) = self.apps.iter().find(|s| s.descriptor.id == id).map(|s| s.repo.clone()) {
             self.dismissed.retain(|d| !d.eq_ignore_ascii_case(&added));
             let _ = self.save();
@@ -197,6 +201,14 @@ impl Registry {
             self.save_icon(id, None);
         }
         let mut changed = self.apps.len() != before;
+        // The index's headings, for every app it lists (also those the user added by hand).
+        for s in &mut self.apps {
+            let category = index.iter().find(|e| e.repo.eq_ignore_ascii_case(&s.repo)).and_then(|e| e.category);
+            if s.category != category {
+                s.category = category;
+                changed = true;
+            }
+        }
         if changed && let Err(e) = self.save() {
             log::warn!("couldn't save the list: {e}");
         }
@@ -206,7 +218,7 @@ impl Registry {
             if known || dismissed {
                 continue;
             }
-            match self.insert(fetch, &entry.repo, true) {
+            match self.insert(fetch, &entry.repo, true, entry.category) {
                 Ok(id) => {
                     log::info!("{}: listed from the app index as {id}", entry.repo);
                     changed = true;
@@ -217,7 +229,13 @@ impl Registry {
         changed
     }
 
-    fn insert(&mut self, fetch: &dyn Fetch, repo: &str, from_index: bool) -> Result<String, Vec<String>> {
+    fn insert(
+        &mut self,
+        fetch: &dyn Fetch,
+        repo: &str,
+        from_index: bool,
+        category: Option<craft_app_descriptor::Category>,
+    ) -> Result<String, Vec<String>> {
         let repo = normalise_repo(repo)
             .ok_or_else(|| vec![format!("{repo:?} isn't a GitHub repository (owner/name, owner/name#app, or its https://github.com/ link)")])?;
         if craft_app_descriptor::reserved::repo(craft_app_descriptor::source::repo_of(&repo)) {
@@ -241,7 +259,7 @@ impl Registry {
         let id = d.id.clone();
         // The key, with the repo spelt as GitHub (and the descriptor) spell it.
         let key = if repo.contains('#') { format!("{}#{}", d.repo, d.id) } else { d.repo.clone() };
-        self.apps.push(Stored { repo: key, tag: got.tag, pin: Pin::of(d), descriptor: got.descriptor, problems: Vec::new(), from_index });
+        self.apps.push(Stored { repo: key, tag: got.tag, pin: Pin::of(d), descriptor: got.descriptor, problems: Vec::new(), from_index, category });
         self.save().map_err(|e| vec![format!("couldn't save the list: {e}")])?;
         Ok(id)
     }
@@ -554,7 +572,7 @@ mod tests {
         use craft_app_descriptor::IndexEntry;
         let dir = tempfile::tempdir().unwrap();
         let mut reg = Registry::load(dir.path());
-        let entry = |repo: &str| IndexEntry { repo: repo.into(), name: "x".into() };
+        let entry = |repo: &str| IndexEntry::new(repo.into());
         let good = Fake::new("v1.0.0", &descriptor("org.someone.notecraft"));
         // A repo that doesn't keep the contract is skipped quietly.
         let broken = Fake::new("v1.0.0", &descriptor("org.someone.notecraft"));
@@ -585,8 +603,26 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut reg = Registry::load(dir.path());
         let good = Fake::new("v1.0.0", &descriptor("org.someone.notecraft"));
-        assert!(reg.sync_index(&good, &[IndexEntry { repo: REPO.into(), name: "x".into() }]));
+        assert!(reg.sync_index(&good, &[IndexEntry::new(REPO.into())]));
         assert!(reg.sync_index(&good, &[]));
         assert!(reg.apps().is_empty());
+    }
+
+    #[test]
+    fn the_index_category_follows_the_index_and_reaches_the_catalog() {
+        use craft_app_descriptor::{Category, IndexEntry};
+        let dir = tempfile::tempdir().unwrap();
+        let mut reg = Registry::load(dir.path());
+        let good = Fake::new("v1.0.0", &descriptor("org.someone.notecraft"));
+        let filed = |c| [IndexEntry { category: c, ..IndexEntry::new(REPO.into()) }];
+        assert!(reg.sync_index(&good, &filed(Some(Category::Productivity))));
+        assert_eq!(reg.entries()[0].category, Some(Category::Productivity));
+        assert!(!reg.sync_index(&good, &filed(Some(Category::Productivity))), "same heading: nothing changed");
+        // Refiled: the list changes and the new heading is saved.
+        assert!(reg.sync_index(&good, &filed(Some(Category::Graphics))));
+        assert_eq!(Registry::load(dir.path()).apps()[0].category, Some(Category::Graphics));
+        // The index drops the heading: so does the app.
+        assert!(reg.sync_index(&good, &filed(None)));
+        assert_eq!(reg.entries()[0].category, None);
     }
 }

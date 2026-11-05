@@ -251,3 +251,12 @@ Several apps can publish their releases in one repo, which is how the bridges in
   app whose release falls out of the newest 100 isn't seen until it publishes again;
 - the repo can't be added as a whole (without `#<id>`);
 - check a release with `craft-release-check github --repo owner/name#<id> --tag <id>-v<version>`.
+
+## 7. Categories in the app index
+
+An object entry in `index/apps.json` may add a `category`, which the launcher uses to group and
+filter its list: `{"repo": "owner/name", "app": "<id>", "category": "audio-video"}`. The keys are
+`graphics`, `audio-video`, `3d`, `maps`, `productivity`, `developer` and `utilities`. An unknown
+key counts as none, and an app with none (or one added by hand) appears under "Other". The
+category belongs to the index, not to `craft-app.json`, so an app can't choose its own heading.
+Launchers before 0.12 ignore the key.

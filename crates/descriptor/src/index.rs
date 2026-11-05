@@ -6,7 +6,8 @@
 //! ```
 //!
 //! An entry with an `app` (or written `owner/shared#examplecraft`) is one app in a shared release
-//! repo; see [`crate::source`].
+//! repo; see [`crate::source`]. An object entry may also name a `category` (see
+//! [`crate::category`]); launchers before 0.12 ignore it.
 //!
 //! Every listed repo is checked exactly like one a user adds by hand: its latest release's
 //! `craft-app.json`, checksums and release contract. A repo that passes appears in the launcher on
@@ -35,12 +36,15 @@ pub struct IndexEntry {
     pub repo: String,
     /// A name for logs and messages before the descriptor is read: the app id or the repo's name.
     pub name: String,
+    /// The heading the maintainer files it under. `None`: none, or a key this launcher doesn't know.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub category: Option<crate::Category>,
 }
 
 impl IndexEntry {
-    fn new(repo: String) -> Self {
+    pub fn new(repo: String) -> Self {
         let name = repo.rsplit(['/', '#']).next().unwrap_or_default().to_string();
-        Self { repo, name }
+        Self { repo, name, category: None }
     }
 }
 
@@ -96,7 +100,8 @@ impl Index {
             if crate::reserved::repo(crate::source::repo_of(&repo)) || apps.iter().any(|a| a.repo.eq_ignore_ascii_case(&repo)) {
                 continue;
             }
-            apps.push(IndexEntry::new(repo));
+            let category = e.get("category").and_then(serde_json::Value::as_str).and_then(crate::Category::from_key);
+            apps.push(IndexEntry { category, ..IndexEntry::new(repo) });
             if apps.len() == MAX_ENTRIES {
                 break;
             }
@@ -164,5 +169,31 @@ mod tests {
         assert_eq!(i.apps[0].name, "mailcraft");
         assert_eq!(source_from_input("github.com/o/shared#x-craft").as_deref(), Some("o/shared#x-craft"));
         assert_eq!(source_from_input("o/shared#"), None);
+    }
+    #[test]
+    fn categories_are_read_and_unknown_ones_dropped() {
+        let json = br#"{"schema":1,"apps":[
+            {"repo":"o/shared","app":"a","category":"audio-video"},
+            {"repo":"o/shared","app":"b","category":"games"},
+            {"repo":"o/shared","app":"c","category":7},
+            {"repo":"o/other","category":"Maps"},
+            "o/plain"
+        ]}"#;
+        let i = Index::parse(json).unwrap();
+        let cats: Vec<Option<crate::Category>> = i.apps.iter().map(|a| a.category).collect();
+        assert_eq!(cats, [Some(crate::Category::AudioVideo), None, None, Some(crate::Category::Maps), None]);
+    }
+
+    #[test]
+    fn the_shipped_index_parses_with_a_known_category_on_every_object_entry() {
+        let bytes = include_bytes!("../../../index/apps.json");
+        let raw: serde_json::Value = serde_json::from_slice(bytes).unwrap();
+        let objects = raw["apps"].as_array().unwrap().iter().filter(|e| e.is_object()).count();
+        let i = Index::parse(bytes).unwrap();
+        assert_eq!(i.apps.len(), raw["apps"].as_array().unwrap().len(), "every entry in index/apps.json is read");
+        for e in raw["apps"].as_array().unwrap().iter().filter_map(|e| e.get("category")) {
+            assert!(e.as_str().and_then(crate::Category::from_key).is_some(), "unknown category {e} in index/apps.json");
+        }
+        assert!(objects > 0);
     }
 }

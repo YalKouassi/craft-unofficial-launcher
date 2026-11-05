@@ -391,3 +391,18 @@ column	Author	作者
 	Try playground	Playground を試す
 	Got a repo? Follow these guidelines, then anyone can add your app here by entering its GitHub URL.	リポジトリをお持ちですか？このガイドラインに従えば、誰でも GitHub の URL を入力してあなたのアプリをここに追加できます。
 	Guidelines for app authors	アプリ作者向けガイドライン
+# Grouping and filtering the app list.
+	Other	その他
+	Group	グループ
+	Installed first	インストール済みを先に
+	By category	カテゴリ別
+	No grouping	グループなし
+	Show every app	すべてのアプリを表示
+	Show only {category}	{category}のみ表示
+	Graphics	グラフィック
+	Audio & video	オーディオとビデオ
+	3D & CAD	3D と CAD
+	Maps & GIS	地図と GIS
+	Productivity	仕事効率化
+	Developer tools	開発者ツール
+	Utilities	ユーティリティ
