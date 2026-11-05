@@ -74,6 +74,26 @@
     {
       "repo": "YalKouassi/HumanMotionCraft",
       "category": "3d"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "plancraft",
+      "category": "productivity"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "statcraft",
+      "category": "productivity"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "kensaku",
+      "category": "utilities"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "bimcraft",
+      "category": "3d"
     }
   ]
 }
