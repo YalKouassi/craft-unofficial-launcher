@@ -214,11 +214,16 @@ pub mod windows {
     /// Reads the ProductVersion string from a program's VERSIONINFO, in the first language that
     /// has one, without running the program or any other process.
     pub fn executable_version(path: &std::path::Path) -> Option<artcraft_launcher_core::version::Version> {
+        version::parse(product_version(path)?.trim())
+    }
+
+    /// A program's ProductVersion as written, parsed or not. `None`: the program has no version
+    /// resource (or no ProductVersion in it), or can't be read.
+    pub fn product_version(path: &std::path::Path) -> Option<String> {
         let path = dunce::canonicalize(path).ok()?;
         let info = winsafe::HVERSIONINFO::GetFileVersionInfo(path.to_str()?).ok()?;
         let listed = info.langs_and_cps().map(<[_]>::to_vec).unwrap_or_default();
-        let product = string_tables(&listed).into_iter().find_map(|table| info.str_val(table, "ProductVersion").ok())?;
-        version::parse(product.trim())
+        string_tables(&listed).into_iter().find_map(|table| info.str_val(table, "ProductVersion").ok())
     }
 
     /// The string tables to look in: the languages the file lists, then U.S. English in UTF-16,

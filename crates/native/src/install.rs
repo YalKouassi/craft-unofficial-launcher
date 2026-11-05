@@ -198,9 +198,8 @@ pub fn install_at(
         #[cfg(windows)]
         PackageKind::PortableZip => {
             crate::portable::install(app, &file, &version, previous, job.paths, destination.as_deref(), job.replace, &mut |record| {
-                if release.version.is_some() && crate::detect::windows::executable_version(&record.path).as_ref() != release.version.as_ref() {
-                    return Err("The portable executable does not match the selected version. The installation was rolled back.".into());
-                }
+                let found = crate::detect::windows::product_version(&record.path);
+                check_portable_version(app.name, found.as_deref(), release.version.as_ref())?;
                 match commit.as_deref_mut() {
                     Some(commit) => commit(record),
                     None => Ok(()),
@@ -245,6 +244,28 @@ pub fn install_at(
     }
     // The system's own prompt was dismissed: the download itself wasn't cancelled.
     result.map_err(|e| if e == CANCELLED { INSTALL_CANCELLED.to_string() } else { e })
+}
+
+/// Whether a portable exe just unpacked may stand as the release's version `wanted`. One whose
+/// ProductVersion is written must say `wanted`; anything else (another version, or text that isn't
+/// a version) means the zip holds a different build than the release claims, and the install is
+/// rolled back. One with no version resource can neither confirm nor contradict the release: the
+/// release's `SHA256SUMS.txt` already vouched for the zip, so it is accepted and the release's
+/// version recorded for it (the spec, "The portable executable's version").
+#[cfg_attr(not(windows), allow(dead_code))]
+fn check_portable_version(app: &str, found: Option<&str>, wanted: Option<&version::Version>) -> Result<(), String> {
+    let Some(wanted) = wanted else { return Ok(()) };
+    match found.map(str::trim) {
+        None | Some("") => {
+            log::info!("{app}: the portable executable carries no version; recording the release's {wanted}");
+            Ok(())
+        }
+        Some(text) if version::parse(text).as_ref() == Some(wanted) => Ok(()),
+        Some(text) => {
+            log::warn!("{app}: the portable executable says {text:?}, not {wanted}; rolling back");
+            Err("The portable executable does not match the selected version. The installation was rolled back.".into())
+        }
+    }
 }
 
 /// Rejects an artifact whose own identity disagrees with the release that authorized it.
@@ -2154,6 +2175,22 @@ pub mod windows {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A portable exe with no version resource is accepted (the release's checksums vouched for
+    /// the zip); one whose ProductVersion is written must name the release's version.
+    #[test]
+    fn a_portable_exe_without_a_version_is_accepted_but_a_different_version_is_not() {
+        let wanted = version::parse("1.2.0");
+        let check = |found: Option<&str>| check_portable_version("SampleCraft", found, wanted.as_ref());
+        assert!(check(Some("1.2.0")).is_ok());
+        assert!(check(Some(" 1.2.0 ")).is_ok());
+        assert!(check(None).is_ok(), "no version resource: nothing to contradict the release");
+        assert!(check(Some("")).is_ok(), "an empty ProductVersion says nothing either");
+        assert!(check(Some("1.1.0")).is_err(), "an older build under a new tag is rolled back");
+        assert!(check(Some("not a version")).is_err(), "a written version that isn't one is rolled back");
+        // A release without a version (an unparseable tag) has nothing to check against.
+        assert!(check_portable_version("SampleCraft", Some("9.9.9"), None).is_ok());
+    }
 
     /// A folder found only by the launch fallback, in another scope, never reaches the installer.
     #[cfg(windows)]

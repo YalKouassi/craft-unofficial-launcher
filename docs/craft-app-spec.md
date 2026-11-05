@@ -161,12 +161,15 @@ The launcher installs archives without running anything in them, so their layout
 - **Windows portable zip** (`-portable.zip`): `<id>.exe` (or `<former_id>.exe`, in any case) sits
   at the root of the zip, or at the root of a single wrapper folder. Entries use `/` as the folder
   separator (a zip written with `\` is refused), with no absolute paths, `..` or links.
-- **The portable executable's version.** That `<id>.exe` must carry a Windows version resource
+- **The portable executable's version.** That `<id>.exe` should carry a Windows version resource
   (VERSIONINFO) whose `ProductVersion` is the release's version (`1.2.0` for tag `v1.2.0`). The
   launcher reads it after unpacking to confirm it installed the version it chose, and rolls the
-  install back when it's missing or different. Rust apps get one from a `build.rs` using the
-  `winresource` crate, which takes the version from `Cargo.toml`. The checker can't test this; check
-  with PowerShell: `(Get-Item <id>.exe).VersionInfo.ProductVersion`. An `.msi` has no such rule.
+  install back when it names another version or isn't a version at all. An exe with no version
+  resource is accepted from launcher 0.12 on: the launcher records the release's version for it,
+  so a zip holding an older build under a new tag goes unnoticed. Launchers before 0.12 roll such an
+  install back. Rust apps get a version resource from a `build.rs` using the `winresource` crate,
+  which takes the version from `Cargo.toml`. The checker can't test this; check with PowerShell:
+  `(Get-Item <id>.exe).VersionInfo.ProductVersion`. An `.msi` has no such rule.
 - **Linux and FreeBSD tarball** (`.tar.gz`): after an optional single top folder, the program is a
   regular file at `bin/<id>` or `<id>`, reached without links.
 
