@@ -3,56 +3,77 @@
   "apps": [
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "mailcraft"
+      "app": "mailcraft",
+      "category": "productivity"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "notecraft"
+      "app": "notecraft",
+      "category": "productivity"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "rustgis"
+      "app": "rustgis",
+      "category": "maps"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "subcraft"
+      "app": "subcraft",
+      "category": "3d"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "procraft"
+      "app": "procraft",
+      "category": "graphics"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "earthcraft"
+      "app": "earthcraft",
+      "category": "maps"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "picasso-suite"
+      "app": "picasso-suite",
+      "category": "audio-video"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "prowave"
+      "app": "prowave",
+      "category": "audio-video"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "transit"
+      "app": "transit",
+      "category": "audio-video"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "tracedraw"
+      "app": "tracedraw",
+      "category": "graphics"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "chromaforge"
+      "app": "chromaforge",
+      "category": "graphics"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "paintcraft"
+      "app": "paintcraft",
+      "category": "graphics"
     },
     {
       "repo": "YalKouassi/craft-bridges",
-      "app": "capsulecraft"
+      "app": "capsulecraft",
+      "category": "productivity"
     },
-    "https://github.com/YalKouassi/HumanMotionCraft"
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "altered-audio-editor",
+      "category": "audio-video"
+    },
+    {
+      "repo": "YalKouassi/HumanMotionCraft",
+      "category": "3d"
+    }
   ]
 }
