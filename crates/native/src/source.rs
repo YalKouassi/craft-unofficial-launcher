@@ -96,7 +96,14 @@ pub struct GitHubSource {
 impl GitHubSource {
     pub fn new(http: Http, cache_path: std::path::PathBuf) -> Self {
         let cache = std::fs::read(&cache_path).ok().and_then(|b| serde_json::from_slice::<CacheFile>(&b).ok()).unwrap_or_default();
-        Self { http, cache: Mutex::new(cache), versions_cache: Mutex::new(BTreeMap::new()), lists: Mutex::new(BTreeMap::new()), cache_path, limited_until: Mutex::new(None) }
+        Self {
+            http,
+            cache: Mutex::new(cache),
+            versions_cache: Mutex::new(BTreeMap::new()),
+            lists: Mutex::new(BTreeMap::new()),
+            cache_path,
+            limited_until: Mutex::new(None),
+        }
     }
 
     fn entry(&self, repo: &str, prereleases: bool) -> Option<Entry> {

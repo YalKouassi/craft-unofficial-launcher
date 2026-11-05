@@ -87,8 +87,10 @@ impl CraftApp {
         }
     }
 
+    /// Its project's GitHub page: the upstream project for a bridged app (not the bridge repo
+    /// its releases come from), else its own repo.
     pub fn repo_url(&self) -> String {
-        format!("https://github.com/{}", self.github_repo())
+        format!("https://github.com/{}", self.upstream.unwrap_or_else(|| self.github_repo()))
     }
 
     /// Its website, or its repository when it names none.
@@ -284,6 +286,15 @@ mod tests {
         assert_eq!(app.color, [0x33, 0x66, 0x99]);
         // The same descriptor hands back the very same strings.
         assert!(std::ptr::eq(app.id, CraftApp::from_descriptor(&descriptor("notecraft", None), None).id));
+    }
+
+    #[test]
+    fn a_bridged_app_links_to_its_upstream_project() {
+        let mut d = descriptor("notecraft", None);
+        d.upstream = Some("AlienTechSoftware/notecraft".into());
+        let app = CraftApp::from_descriptor_at(&d, "YalKouassi/craft-bridges#notecraft", None);
+        assert_eq!(app.repo_url(), "https://github.com/AlienTechSoftware/notecraft");
+        assert_eq!(app.releases_url(), "https://github.com/YalKouassi/craft-bridges/releases?q=notecraft-v&expanded=true");
     }
 
     #[test]
