@@ -94,6 +94,26 @@
       "repo": "YalKouassi/craft-bridges",
       "app": "bimcraft",
       "category": "3d"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "mapcraft",
+      "category": "3d"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "datacraft",
+      "category": "developer"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "dotcraft",
+      "category": "developer"
+    },
+    {
+      "repo": "YalKouassi/craft-bridges",
+      "app": "crabcraft",
+      "category": "developer"
     }
   ]
 }
