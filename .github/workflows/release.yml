@@ -12,6 +12,8 @@ on:
 
 permissions:
   contents: write
+  # craft-common-actions' Flatpak job publishes the Flatpak to this repo's own ghcr.io registry.
+  packages: write
 
 concurrency:
   group: release-${{ github.ref }}
