@@ -131,7 +131,12 @@ impl GitHubSource {
             return Ok(Answer { latest: LatestRelease::Found(r.clone()), source: Source::GitHubPages });
         }
         let sums_url = format!("{}{tag}/SHA256SUMS.txt", release::download_prefix(repo));
-        let sums = self.http.get_text(&sums_url)?.map(|t| release::parse_sha256sums(&t)).unwrap_or_default();
+        // A missing or unreadable list is a failed lookup, not a release with nothing in it.
+        let text = self.http.get_text(&sums_url)?.ok_or_else(|| format!("{tag} has no SHA256SUMS.txt"))?;
+        let sums = release::parse_sha256sums(&text);
+        if sums.is_empty() {
+            return Err(format!("{tag}'s SHA256SUMS.txt lists no files"));
+        }
         let r = release::release_from_sums(repo, &tag, &sums);
         self.store(repo, Entry { etag: None, release: Some(r.clone()), prereleases: false, fetched_at: crate::now() });
         Ok(Answer { latest: LatestRelease::Found(r), source: Source::GitHubPages })

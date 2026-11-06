@@ -110,9 +110,18 @@ pub fn safe_release_html_url(repo: &str, url: &str) -> Option<String> {
     Some(url.to_string())
 }
 
-/// The prefix every download of `repo` must start with.
+/// The prefix every download of `repo` must start with. `repo` may be a source key
+/// (`owner/name#app`): the `#app` part names an app of a shared repo, not part of the URL, and
+/// left in it would turn the rest of the URL into a fragment.
 pub fn download_prefix(repo: &str) -> String {
-    format!("https://github.com/{repo}/releases/download/")
+    format!("https://github.com/{}/releases/download/", craft_app_descriptor::source::repo_of(repo))
+}
+
+/// Whether `release` lists no files beyond its `SHA256SUMS.txt`: what a quota-free lookup gives
+/// when it couldn't read the checksum list. Such a release offers nothing to install, so it
+/// must never stand in for the real one.
+pub fn is_hollow(release: &Release) -> bool {
+    release.assets.iter().all(|a| a.name == "SHA256SUMS.txt")
 }
 
 /// Whether `url` is a download that truly belongs to `repo`.
@@ -580,6 +589,16 @@ mod tests {
         assert_eq!(shared.assets[1].url, "https://github.com/org/bridges/releases/download/mailcraft-v0.10.0/b.zip");
         assert_eq!(shared.html_url, "https://github.com/org/bridges/releases/tag/mailcraft-v0.10.0");
         assert_eq!(shared.version, Some(Version::new(0, 10, 0)));
+        assert!(!is_hollow(&shared));
+        assert!(is_hollow(&release_from_sums("org/bridges#mailcraft", "mailcraft-v0.10.0", &[])));
+    }
+
+    #[test]
+    fn a_shared_repo_key_never_leaks_into_download_urls() {
+        // `#mailcraft` left in would make everything after it a fragment: the checksum list
+        // would be read from the repo's home page, which lists no files.
+        assert_eq!(download_prefix("org/bridges#mailcraft"), "https://github.com/org/bridges/releases/download/");
+        assert_eq!(download_prefix("org/app"), "https://github.com/org/app/releases/download/");
     }
 
     #[test]

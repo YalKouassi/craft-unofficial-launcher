@@ -95,7 +95,10 @@ pub struct GitHubSource {
 
 impl GitHubSource {
     pub fn new(http: Http, cache_path: std::path::PathBuf) -> Self {
-        let cache = std::fs::read(&cache_path).ok().and_then(|b| serde_json::from_slice::<CacheFile>(&b).ok()).unwrap_or_default();
+        let mut cache: CacheFile = std::fs::read(&cache_path).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default();
+        // Launchers up to 0.12.0 could save a quota-free answer whose checksum list didn't read
+        // (no publish date, no files): drop it so the app is looked up again.
+        cache.entries.retain(|_, e| !e.release.as_ref().is_some_and(|r| r.published_at.is_none() && release::is_hollow(r)));
         Self {
             http,
             cache: Mutex::new(cache),
@@ -237,12 +240,18 @@ impl GitHubSource {
     /// that tag).
     fn release_at_tag(&self, repo: &str, tag: String) -> Result<Answer, String> {
         if let Some(e) = self.entry(repo, false)
-            && let Some(r) = e.release.as_ref().filter(|r| r.tag == tag)
+            && let Some(r) = e.release.as_ref().filter(|r| r.tag == tag && !release::is_hollow(r))
         {
             return Ok(Answer { latest: LatestRelease::Found(r.clone()), source: Source::GitHubPages });
         }
         let sums_url = format!("{}{tag}/SHA256SUMS.txt", release::download_prefix(repo));
-        let sums = self.http.get_text(&sums_url)?.map(|t| release::parse_sha256sums(&t)).unwrap_or_default();
+        // A missing or unreadable list is a failed lookup, not a release with nothing in it:
+        // saved, an empty release would show the app as "Not available" until the API answers.
+        let text = self.http.get_text(&sums_url)?.ok_or_else(|| format!("{tag} has no SHA256SUMS.txt"))?;
+        let sums = release::parse_sha256sums(&text);
+        if sums.is_empty() {
+            return Err(format!("{tag}'s SHA256SUMS.txt lists no files"));
+        }
         let r = release::release_from_sums(repo, &tag, &sums);
         self.store(repo, Entry { etag: None, release: Some(r.clone()), prereleases: false, fetched_at: crate::now() });
         Ok(Answer { latest: LatestRelease::Found(r), source: Source::GitHubPages })
@@ -337,5 +346,32 @@ impl ReleaseSource for GitHubSource {
             }
             Err(e) => log::warn!("release cache: {e}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_saved_release_with_no_files_is_dropped_on_load() {
+        let dir = std::env::temp_dir().join(format!("craft-source-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("releases.json");
+        let hollow = release::release_from_sums("org/bridges#prowave", "prowave-v0.2.2", &[]);
+        let sums = [("a".repeat(64), "prowave-0.2.2-windows-x64-portable.zip".to_string())];
+        let good = release::release_from_sums("org/bridges#kensaku", "kensaku-v1.0.16", &sums);
+        let mut file = CacheFile::default();
+        for (key, r) in [("org/bridges#prowave", hollow), ("org/bridges#kensaku", good)] {
+            file.entries.insert(key.into(), Entry { etag: None, release: Some(r), prereleases: false, fetched_at: 1 });
+        }
+        file.entries.insert("org/none".into(), Entry::default());
+        std::fs::write(&path, serde_json::to_vec(&file).unwrap()).unwrap();
+
+        let source = GitHubSource::new(Http::new().unwrap(), path);
+        assert_eq!(source.cached("org/bridges#prowave", false), None, "the hollow answer is forgotten");
+        assert!(matches!(source.cached("org/bridges#kensaku", false), Some(LatestRelease::Found(r)) if r.assets.len() == 2));
+        assert_eq!(source.cached("org/none", false), Some(LatestRelease::None), "a repo with no releases is kept");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
