@@ -114,6 +114,46 @@
       "repo": "YalKouassi/craft-bridges",
       "app": "crabcraft",
       "category": "developer"
+    },
+    {
+      "repo": "emilio-n8n/diagramcraft",
+      "category": "graphics"
+    },
+    {
+      "repo": "emilio-n8n/projectcraft",
+      "category": "productivity"
+    },
+    {
+      "repo": "emilio-n8n/formcraft",
+      "category": "productivity"
+    },
+    {
+      "repo": "emilio-n8n/mathcraft",
+      "category": "utilities"
+    },
+    {
+      "repo": "emilio-n8n/mastercraft",
+      "category": "audio-video"
+    },
+    {
+      "repo": "emilio-n8n/circuitcraft",
+      "category": "utilities"
+    },
+    {
+      "repo": "emilio-n8n/geocraft",
+      "category": "maps"
+    },
+    {
+      "repo": "emilio-n8n/streamcraft",
+      "category": "audio-video"
+    },
+    {
+      "repo": "emilio-n8n/simcraft",
+      "category": "utilities"
+    },
+    {
+      "repo": "emilio-n8n/musiccraft",
+      "category": "audio-video"
     }
   ]
 }
