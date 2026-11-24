@@ -33,7 +33,7 @@ serde_json = "1"
 semver = { version = "1", features = ["serde"] }
 log = "0.4"
 # All date/time conversion goes through jiff (no hand-rolled calendar code beyond the 400-year range extension; AGENTS.md).
-jiff = "0.2"
+jiff = "1.0"
 # craft-unofficial-update keeps craft-libs' chrono pin.
 chrono = { version = "0.4.45", default-features = false, features = ["std"] }
 # Vendored fork of storytold/craft-libs `crates/update` (rev 92d392cff132eaf53e13afff77f38b5c11b73aa0).
